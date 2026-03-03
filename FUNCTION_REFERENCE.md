@@ -13,8 +13,10 @@ Quick reference for all contract and frontend functions.
 | `safeMint(to, tier)` | external, owner | Mint a card without payment (internal use). |
 | `safeMint(to, referrer, tier)` | external, owner | Same with referrer. |
 | `mintWithPayment(to, tier)` | external | User pays USDT; mint card. Splits to queue, SC2, SC3, SC4; overflow to SC1. |
-| `mintWithPayment(to, referrer, tier)` | external | Same with referrer (10% to SC4, 5% to referrer, 5% fee pool). |
+| `mintWithPayment(to, referrer, tier)` | external | Same with referrer. Cards Cashback to SC4 (95% to referrer, 5% to SC2); amount depends on referrer's qualification level (1–4). |
 | `withdrawRewards(tokenId)` | external | Withdraw CLC reward to wallet. Owner only; requires `rewardComplete`. CLC2: after withdraw, card is dismissed. |
+| `claimCLC2(tokenId)` | external | Owner only. Mint deferred CLC2 card when reserve was insufficient at completion (batch mint). |
+| `getReferrerCashbackLevel(referrer)` | view | Returns referrer's Cards Cashback qualification level (1–4). Condition 2 = has Platinum + Bronze CLC2 done; 3 = Emerald + Bronze & Platinum CLC2 done; 4 = Diamond + all lower CLC2 done. |
 | `totalSupply()` | view | Number of tokens minted. |
 | `tierOf(tokenId)` | view | Tier (0–3) of the card. |
 | `rewardBalance(tokenId)` | view | Current reward balance (USDT) on the card. |
@@ -62,12 +64,12 @@ Quick reference for all contract and frontend functions.
 
 ---
 
-### ReferralFeeHandler (SC4)
+### ReferralFeeHandler (SC4) — Cards Cashback
 
 | Function | Type | Description |
 |----------|------|-------------|
-| `processReferralPayment(referrer, totalAmount)` | external | Only Master. Splits 50% to referrer (if not zero), rest stays as fee pool. |
-| `withdrawFeePool(to, amount)` | external, owner | Withdraw fee pool USDT to `to`. |
+| `processReferralPayment(referrer, totalAmount)` | external | Only Master. Splits 95% to referrer, 5% to DeveloperReceiver (SC2). |
+| `withdrawToken(to, amount)` | external, owner | Withdraw any USDT held in SC4 (e.g. when no referrer was set) to `to`. |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
 
 ---
