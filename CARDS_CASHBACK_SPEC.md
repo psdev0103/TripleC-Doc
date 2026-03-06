@@ -1,18 +1,22 @@
 # Cards Cashback — Specification
 
-**Triple C** referral rewards are called **Cards Cashback**. When a referred user mints a card, their referrer receives a cashback amount. The amount depends on the **referrer’s qualification condition** (1–4) and the **tier of the card the referred user just minted**.  
+**Triple C** referral rewards are called **Cards Cashback**. When a referred user mints a card, **the referrer** (the user who receives the cashback) gets a reward. The cashback amount is determined by **the referrer’s own condition** (1–4), **not** by the referred user’s condition or tier history. The only thing the referred user contributes is **which card tier they just minted** (Bronze / Platinum / Emerald / Diamond), which picks the row in the table.  
 95% of the cashback goes to the referrer’s wallet; 5% goes to the developer profit wallet (SC2).
+
+**Important:** Condition (1–4) is always the **referrer’s** qualification — i.e. the person receiving the cashback. The referred user only determines the mint tier (which card they bought).
 
 ---
 
-## 1. Cashback amounts by condition and mint tier
+## 1. Cashback amounts by referrer condition and mint tier
 
-All amounts below are **total cashback per referred mint** (in USDT).  
+All amounts below are **total cashback per referred mint** (in USDT), paid **to the referrer**.  
 Split: **95% to referrer**, **5% to developer**.
 
-### Condition 1 (default)
+The **columns** are the **referrer’s condition** (who receives the cashback). The **rows** are the **tier of the card the referred user just minted**.
 
-When the referred user joins with **any** card tier, the referrer gets:
+### Condition 1 (default) — referrer’s level
+
+When **the referrer** is in Condition 1, they receive (for any mint tier of their referred user):
 
 | Referred user mints | Total cashback | To referrer | To developer |
 |---------------------|----------------|-------------|--------------|
@@ -21,13 +25,13 @@ When the referred user joins with **any** card tier, the referrer gets:
 | Emerald             | $1             | $0.95       | $0.05        |
 | Diamond             | $1             | $0.95       | $0.05        |
 
-**Who is Condition 1:** Every referrer starts here. No extra requirements.
+**Who is in Condition 1:** Every referrer starts here. No extra requirements.
 
 ---
 
-### Condition 2
+### Condition 2 — referrer’s level
 
-When the referred user joins with **Platinum** (or higher) card, the referrer gets:
+When **the referrer** is in Condition 2, they receive (amount depends on what tier the referred user just minted):
 
 | Referred user mints | Total cashback | To referrer | To developer |
 |---------------------|----------------|-------------|--------------|
@@ -36,16 +40,16 @@ When the referred user joins with **Platinum** (or higher) card, the referrer ge
 | Emerald             | $10            | $9.50       | $0.50        |
 | Diamond             | $10            | $9.50       | $0.50        |
 
-**Who qualifies for Condition 2:**
+**Who qualifies for Condition 2 (the referrer’s level):**
 
 1. The referrer must have minted **at least one Platinum card** (any time).
 2. The referrer must have **finished their Bronze card on CLC 2** (i.e. they have a Bronze CLC1 that reached cap and had its CLC2 card auto-minted).
 
 ---
 
-### Condition 3
+### Condition 3 — referrer’s level
 
-When the referred user joins with **Emerald** (or higher) card, the referrer gets:
+When **the referrer** is in Condition 3, they receive (amount depends on what tier the referred user just minted):
 
 | Referred user mints | Total cashback | To referrer | To developer |
 |---------------------|----------------|-------------|--------------|
@@ -54,7 +58,7 @@ When the referred user joins with **Emerald** (or higher) card, the referrer get
 | Emerald             | $50            | $47.50      | $2.50        |
 | Diamond             | $50            | $47.50      | $2.50        |
 
-**Who qualifies for Condition 3:**
+**Who qualifies for Condition 3 (the referrer’s level):**
 
 1. The referrer must have minted **at least one Emerald card**.
 2. The referrer must have **finished their Bronze card on CLC 2**.
@@ -62,9 +66,9 @@ When the referred user joins with **Emerald** (or higher) card, the referrer get
 
 ---
 
-### Condition 4
+### Condition 4 — referrer’s level
 
-When the referred user joins with **Diamond** card, the referrer gets:
+When **the referrer** is in Condition 4, they receive (amount depends on what tier the referred user just minted):
 
 | Referred user mints | Total cashback | To referrer | To developer |
 |---------------------|----------------|-------------|--------------|
@@ -73,7 +77,7 @@ When the referred user joins with **Diamond** card, the referrer gets:
 | Emerald             | $50            | $47.50      | $2.50        |
 | Diamond             | $100           | $95.00      | $5.00        |
 
-**Who qualifies for Condition 4:**
+**Who qualifies for Condition 4 (the referrer’s level):**
 
 1. The referrer must have minted **at least one Diamond card**.
 2. The referrer must have **finished their Bronze card on CLC 2**.
@@ -96,29 +100,34 @@ So: the referrer has progressed that tier through CLC1 and into CLC2 completion.
 
 ## 3. Summary table (total cashback per referred mint)
 
-| Referred mints ↓ / Condition → | Condition 1 | Condition 2 | Condition 3 | Condition 4 |
-|--------------------------------|-------------|-------------|-------------|-------------|
-| Bronze                          | $1          | $1          | $1          | $1          |
-| Platinum                        | $1          | $10         | $10         | $10         |
-| Emerald                         | $1          | $10         | $50         | $50         |
-| Diamond                         | $1          | $10         | $50         | $100        |
+**Columns** = referrer’s condition (the person who receives the cashback).  
+**Rows** = tier of the card the referred user just minted.
 
-Split for every row: **95% to referrer wallet**, **5% to developer (SC2)**.
+| Referred user mints ↓ / Referrer condition → | Condition 1 | Condition 2 | Condition 3 | Condition 4 |
+|---------------------------------------------|-------------|-------------|-------------|-------------|
+| Bronze                                       | $1          | $1          | $1          | $1          |
+| Platinum                                     | $1          | $10         | $10         | $10         |
+| Emerald                                      | $1          | $10         | $50         | $50         |
+| Diamond                                      | $1          | $10         | $50         | $100        |
+
+Split for every cell: **95% to referrer wallet**, **5% to developer (SC2)**.
 
 ---
 
 ## 4. Implementation notes
 
-- **On-chain:** The NFT contract computes the referrer’s condition (1–4) by inspecting the referrer’s owned cards (tiers, CLC1/CLC2, reward complete, auto-minted). View function: `getReferrerCashbackLevel(referrer)`.
+- **On-chain:** The NFT contract computes **the referrer’s** condition (1–4) by inspecting **the referrer’s** owned cards (tiers, CLC1/CLC2, reward complete, auto-minted). View function: `getReferrerCashbackLevel(referrer)`. The referred user’s condition or history does not affect the cashback amount; only the referrer’s level and the tier of the card just minted do.
 - **Payment flow:** On each mint with a referrer, the contract sends the total cashback amount to SC4 (ReferralFeeHandler). SC4 sends 95% to the referrer and 5% to SC2 (DeveloperReceiver).
-- **Backend:** When recording a referral fee (e.g. for history), the backend reads the referrer’s cashback level from the contract and uses the same table so stored amounts match on-chain payouts.
+- **Backend:** When recording a referral fee (e.g. for history), the backend reads the **referrer’s** cashback level from the contract and uses the same table so stored amounts match on-chain payouts.
 
 ---
 
-## 5. Quick reference: how to reach each condition
+## 5. Quick reference: how the referrer reaches each condition
 
-| Condition | Require |
-|-----------|--------|
+These requirements apply to **the referrer** (the user who receives the cashback), not to the referred user.
+
+| Condition | Referrer must |
+|-----------|----------------|
 | **1**     | (default) |
 | **2**     | Mint ≥1 Platinum **and** Bronze CLC2 finished |
 | **3**     | Mint ≥1 Emerald **and** Bronze CLC2 **and** Platinum CLC2 finished |

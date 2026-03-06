@@ -173,9 +173,20 @@ Every **paid mint** splits the tier price as below. Amounts are in **USDT per ca
 | Tier     | Amount to SC1 Overlap |
 |----------|------------------------|
 | Bronze   | $5                     |
-| Platinum | $10                    |
+| Platinum | $50 (5×$10)            |
 | Emerald  | $250 (5×$50)           |
 | Diamond  | $500 (5×$100)          |
+
+### 3.4 When a CLC2 card is generated
+
+When a CLC1 card reaches cap and a **CLC2 card is auto-minted**, the same queue/overlap flow applies (flow in row queue + remainder to Overlap SC):
+
+| Tier     | Flow in row queue      | To SC1 Overlap |
+|----------|------------------------|----------------|
+| Bronze   | $5 (1×$5)              | $5             |
+| Platinum | $50 (5×$10)            | $50            |
+| Emerald  | $250 (5×$50)           | $250           |
+| Diamond  | $500 (5×$100)          | $500           |
 
 ---
 
