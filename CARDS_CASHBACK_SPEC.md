@@ -25,7 +25,7 @@ When **the referrer** is in Condition 1, they receive (for any mint tier of thei
 | Emerald             | $1             | $0.95       | $0.05        |
 | Diamond             | $1             | $0.95       | $0.05        |
 
-**Who is in Condition 1:** Every referrer starts here. No extra requirements.
+**Who is in Condition 1:** Their **first minted card** (oldest CLC1 by tokenId) is Bronze, or they have no cards.
 
 ---
 
@@ -40,10 +40,7 @@ When **the referrer** is in Condition 2, they receive (amount depends on what ti
 | Emerald             | $10            | $9.50       | $0.50        |
 | Diamond             | $10            | $9.50       | $0.50        |
 
-**Who qualifies for Condition 2 (the referrer’s level):**
-
-1. The referrer must have minted **at least one Platinum card** (any time).
-2. The referrer must have **finished their Bronze card on CLC 2** (i.e. they have a Bronze CLC1 that reached cap and had its CLC2 card auto-minted).
+**Who qualifies for Condition 2:** Their **first minted card** (in queue order) is Platinum — or they started lower and **upgraded** to 2 when that card was completed in CLC2 and the next card in queue is Platinum (see §2).
 
 ---
 
@@ -58,11 +55,7 @@ When **the referrer** is in Condition 3, they receive (amount depends on what ti
 | Emerald             | $50            | $47.50      | $2.50        |
 | Diamond             | $50            | $47.50      | $2.50        |
 
-**Who qualifies for Condition 3 (the referrer’s level):**
-
-1. The referrer must have minted **at least one Emerald card**.
-2. The referrer must have **finished their Bronze card on CLC 2**.
-3. The referrer must have **finished their Platinum card on CLC 2**.
+**Who qualifies for Condition 3:** Their **first minted card** (in queue order) is Emerald — or they **upgraded** to 3 when the previous defining card was completed in CLC2 and the next card in queue is Emerald.
 
 ---
 
@@ -77,24 +70,16 @@ When **the referrer** is in Condition 4, they receive (amount depends on what ti
 | Emerald             | $50            | $47.50      | $2.50        |
 | Diamond             | $100           | $95.00      | $5.00        |
 
-**Who qualifies for Condition 4 (the referrer’s level):**
-
-1. The referrer must have minted **at least one Diamond card**.
-2. The referrer must have **finished their Bronze card on CLC 2**.
-3. The referrer must have **finished their Platinum card on CLC 2**.
-4. The referrer must have **finished their Emerald card on CLC 2**.
+**Who qualifies for Condition 4:** Their **first minted card** (in queue order) is Diamond — or they **upgraded** to 4 when the previous defining card was completed in CLC2 and the next card in queue is Diamond.
 
 ---
 
-## 2. “Finished on CLC 2” (definition)
+## 2. How condition is decided and upgraded
 
-For a given tier (e.g. Bronze), a referrer has **finished that tier on CLC 2** when:
-
-- They own at least one **CLC1** card of that tier (the first card they minted of that tier).
-- That CLC1 card has reached its reward cap (**reward complete**).
-- The contract has already created the **CLC2** card for it (**auto-minted**).
-
-So: the referrer has progressed that tier through CLC1 and into CLC2 completion.
+- **Initial condition** is set by the user’s **first minted card** (the CLC1 card with the smallest tokenId they own): Bronze → Condition 1, Platinum → 2, Emerald → 3, Diamond → 4.
+- **“Completed in CLC 2”** (for that card): the CLC1 card has reached its reward cap (**reward complete**) and the contract has already created its CLC2 card (**auto-minted**).
+- **Upgrade:** When the card that currently defines the referrer’s condition is **completed in CLC 2**, the condition can be **upgraded** by the **next first card in the queue** (the next CLC1 card by tokenId). The new condition is the tier of that next card (or higher — condition is never downgraded).
+- **Example:** User’s first mint is Bronze → Condition 1. When that Bronze CLC1 is completed in CLC2, they mint Platinum. The next card in queue is that Platinum → condition upgrades to Condition 2. Condition can never go down.
 
 ---
 
@@ -116,7 +101,7 @@ Split for every paid cashback: **95% to referrer wallet**, **5% to 5% SC (SC5)**
 
 ## 4. Implementation notes
 
-- **On-chain:** The NFT contract computes **the referrer’s** condition (1–4) by inspecting **the referrer’s** owned cards (tiers, CLC1/CLC2, reward complete, auto-minted). View function: `getReferrerCashbackLevel(referrer)`. The referred user’s condition or history does not affect the cashback amount; only the referrer’s level and the tier of the card just minted do.
+- **On-chain:** The NFT contract computes **the referrer’s** condition (1–4) from the **first minted card** (smallest CLC1 tokenId) and **upgrades** when that card is completed in CLC2 (reward complete + auto-minted), using the next CLC1 in queue; condition is never downgraded. View function: `getReferrerCashbackLevel(referrer)`. The referred user’s condition or history does not affect the cashback amount; only the referrer’s level and the tier of the card just minted do.
 - **Payment flow:** On each paid mint, the contract sends the cashback amount to SC4 (ReferralFeeHandler). If a referrer exists, SC4 sends 95% to the referrer and 5% to the 5% SC (SC5 FivePercentReceiver), or to SC2 if SC5 is not set. If no referrer exists, the cashback amount remains in SC4.
 - **Backend:** When recording a referral fee (e.g. for history), the backend reads the **referrer’s** cashback level from the contract and uses the same table so stored amounts match on-chain payouts.
 
@@ -124,11 +109,11 @@ Split for every paid cashback: **95% to referrer wallet**, **5% to 5% SC (SC5)**
 
 ## 5. Quick reference: how the referrer reaches each condition
 
-These requirements apply to **the referrer** (the user who receives the cashback), not to the referred user.
+These apply to **the referrer** (the user who receives the cashback). **Condition is decided by the first card in the user’s mint queue** (oldest CLC1); it **upgrades** when that card is completed in CLC2 and the next card in queue sets a higher condition; it **never downgrades**.
 
-| Condition | Referrer must |
-|-----------|----------------|
-| **1**     | (default) |
-| **2**     | Mint ≥1 Platinum **and** Bronze CLC2 finished |
-| **3**     | Mint ≥1 Emerald **and** Bronze CLC2 **and** Platinum CLC2 finished |
-| **4**     | Mint ≥1 Diamond **and** Bronze, Platinum, **and** Emerald CLC2 finished |
+| Condition | Deciding card (first in queue or after upgrade) |
+|-----------|--------------------------------------------------|
+| **1**     | First mint is **Bronze** (or no cards) |
+| **2**     | First mint is **Platinum**, or upgraded from 1 when Bronze completed in CLC2 and next is Platinum |
+| **3**     | First mint is **Emerald**, or upgraded when defining card completed in CLC2 and next is Emerald |
+| **4**     | First mint is **Diamond**, or upgraded when defining card completed in CLC2 and next is Diamond |
