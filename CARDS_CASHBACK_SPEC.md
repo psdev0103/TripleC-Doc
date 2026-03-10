@@ -1,7 +1,7 @@
 # Cards Cashback — Specification
 
 **Triple C** referral rewards are called **Cards Cashback**. When a referred user mints a card, **the referrer** (the user who receives the cashback) gets a reward. The cashback amount is determined by **the referrer’s own condition** (1–4), **not** by the referred user’s condition or tier history. The only thing the referred user contributes is **which card tier they just minted** (Bronze / Platinum / Emerald / Diamond), which picks the row in the table.  
-95% of the cashback goes to the referrer’s wallet; 5% goes to the developer profit wallet (SC2).
+The **Cards Cashback amount** is always sent into **SC4 ReferralFeeHandler**. When SC4 pays cashback to a referrer, **95%** goes to the referrer’s wallet and **5%** goes to the **5% SC** (FivePercentReceiver, SC5). If no referrer exists, the cashback amount stays in SC4.
 
 **Important:** Condition (1–4) is always the **referrer’s** qualification — i.e. the person receiving the cashback. The referred user only determines the mint tier (which card they bought).
 
@@ -10,7 +10,7 @@
 ## 1. Cashback amounts by referrer condition and mint tier
 
 All amounts below are **total cashback per referred mint** (in USDT), paid **to the referrer**.  
-Split: **95% to referrer**, **5% to developer**.
+Split when paid out by SC4: **95% to referrer**, **5% to 5% SC**.
 
 The **columns** are the **referrer’s condition** (who receives the cashback). The **rows** are the **tier of the card the referred user just minted**.
 
@@ -18,7 +18,7 @@ The **columns** are the **referrer’s condition** (who receives the cashback). 
 
 When **the referrer** is in Condition 1, they receive (for any mint tier of their referred user):
 
-| Referred user mints | Total cashback | To referrer | To developer |
+| Referred user mints | Total cashback | To referrer | To 5% SC |
 |---------------------|----------------|-------------|--------------|
 | Bronze              | $1             | $0.95       | $0.05        |
 | Platinum            | $1             | $0.95       | $0.05        |
@@ -33,7 +33,7 @@ When **the referrer** is in Condition 1, they receive (for any mint tier of thei
 
 When **the referrer** is in Condition 2, they receive (amount depends on what tier the referred user just minted):
 
-| Referred user mints | Total cashback | To referrer | To developer |
+| Referred user mints | Total cashback | To referrer | To 5% SC |
 |---------------------|----------------|-------------|--------------|
 | Bronze              | $1             | $0.95       | $0.05        |
 | Platinum            | $10            | $9.50       | $0.50        |
@@ -51,7 +51,7 @@ When **the referrer** is in Condition 2, they receive (amount depends on what ti
 
 When **the referrer** is in Condition 3, they receive (amount depends on what tier the referred user just minted):
 
-| Referred user mints | Total cashback | To referrer | To developer |
+| Referred user mints | Total cashback | To referrer | To 5% SC |
 |---------------------|----------------|-------------|--------------|
 | Bronze              | $1             | $0.95       | $0.05        |
 | Platinum            | $10            | $9.50       | $0.50        |
@@ -70,7 +70,7 @@ When **the referrer** is in Condition 3, they receive (amount depends on what ti
 
 When **the referrer** is in Condition 4, they receive (amount depends on what tier the referred user just minted):
 
-| Referred user mints | Total cashback | To referrer | To developer |
+| Referred user mints | Total cashback | To referrer | To 5% SC |
 |---------------------|----------------|-------------|--------------|
 | Bronze              | $1             | $0.95       | $0.05        |
 | Platinum            | $10            | $9.50       | $0.50        |
@@ -110,14 +110,14 @@ So: the referrer has progressed that tier through CLC1 and into CLC2 completion.
 | Emerald                                      | $1          | $10         | $50         | $50         |
 | Diamond                                      | $1          | $10         | $50         | $100        |
 
-Split for every cell: **95% to referrer wallet**, **5% to developer (SC2)**.
+Split for every paid cashback: **95% to referrer wallet**, **5% to 5% SC (SC5)**.
 
 ---
 
 ## 4. Implementation notes
 
 - **On-chain:** The NFT contract computes **the referrer’s** condition (1–4) by inspecting **the referrer’s** owned cards (tiers, CLC1/CLC2, reward complete, auto-minted). View function: `getReferrerCashbackLevel(referrer)`. The referred user’s condition or history does not affect the cashback amount; only the referrer’s level and the tier of the card just minted do.
-- **Payment flow:** On each mint with a referrer, the contract sends the total cashback amount to SC4 (ReferralFeeHandler). SC4 sends 95% to the referrer and 5% to SC2 (DeveloperReceiver).
+- **Payment flow:** On each paid mint, the contract sends the cashback amount to SC4 (ReferralFeeHandler). If a referrer exists, SC4 sends 95% to the referrer and 5% to the 5% SC (SC5 FivePercentReceiver), or to SC2 if SC5 is not set. If no referrer exists, the cashback amount remains in SC4.
 - **Backend:** When recording a referral fee (e.g. for history), the backend reads the **referrer’s** cashback level from the contract and uses the same table so stored amounts match on-chain payouts.
 
 ---
