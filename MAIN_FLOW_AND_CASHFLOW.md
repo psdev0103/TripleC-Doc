@@ -202,6 +202,29 @@ For each tier, cashflow is split into **CLC1** (when the user mints a paid card)
 | Emerald  | $1125    | $625          | $500              | $625     | $625           |
 | Diamond  | $2500    | $1500         | $1000             | $1500    | $1500          |
 
+### 3.2a When CLC1 completes and CLC2 is generated (per tier)
+
+**CLC1 card “completes”** when its **reward balance from the queue reaches the CLC1 cap**. At that moment the card stops receiving queue rewards (it is marked complete), the contract pays out the wallet share (95% user, 5% SC5), and **a CLC2 card is generated** for the same owner and tier. So “CLC1 dismissed” and “CLC2 generated” happen in the **same event**.
+
+| Tier     | When CLC1 completes (reward balance reaches) | What happens then | When CLC2 is generated |
+|----------|----------------------------------------------|-------------------|--------------------------|
+| **Bronze**   | **$20** (CLC1 cap) | $10 to owner’s wallet (95% / 5% split), $10 used to mint CLC2. CLC1 card no longer receives queue rewards. | **At the same time** — CLC2 Bronze card is auto-minted for the owner. |
+| **Platinum** | **$200** (CLC1 cap) | $100 to wallet, $100 to mint CLC2. CLC1 card no longer receives queue rewards. | **At the same time** — CLC2 Platinum card is auto-minted. |
+| **Emerald**  | **$1125** (CLC1 cap) | $625 to wallet, $500 to mint CLC2. CLC1 card no longer receives queue rewards. | **At the same time** — CLC2 Emerald card is auto-minted. |
+| **Diamond**  | **$2500** (CLC1 cap) | $1500 to wallet, $1000 to mint CLC2. CLC1 card no longer receives queue rewards. | **At the same time** — CLC2 Diamond card is auto-minted. |
+
+**When is CLC2 dismissed?**  
+The **CLC2 card** is **dismissed** when its reward balance reaches the **CLC2 cap**. Then the contract pays out to the owner (95% / 5%) and the card is marked dismissed (no more rewards).
+
+| Tier     | When CLC2 is dismissed (reward balance reaches) | What happens then |
+|----------|-------------------------------------------------|-------------------|
+| **Bronze**   | **$10** (CLC2 cap)  | $10 to wallet (95% / 5%); card dismissed. |
+| **Platinum** | **$100** (CLC2 cap) | $100 to wallet; card dismissed. |
+| **Emerald**  | **$625** (CLC2 cap) | $625 to wallet; card dismissed. |
+| **Diamond**  | **$1500** (CLC2 cap) | $1500 to wallet; card dismissed. |
+
+Summary: **CLC1 completes and CLC2 is generated** in a single step when the CLC1 card’s queue reward balance hits the tier’s CLC1 cap. **CLC2 is dismissed** when its queue reward balance hits the tier’s CLC2 cap.
+
 ### 3.3 SC1 Overlap — remainder USDT from main card flow
 
 **Overlap SC1** is the contract that receives **remainder USDT** from the main card flow in queue. The queue amount per mint (per tier) is:
