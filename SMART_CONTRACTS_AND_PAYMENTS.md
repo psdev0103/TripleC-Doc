@@ -10,9 +10,9 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 |----------|------|----------------|
 | **CustomNFT (Master)** | Holds reserve; distributes queue; pays out CLC; sends to SC1, SC1b, SC2, SC3, SC4, SC5 | User (mint price) |
 | **SC1 OverlapReceiver** | Queue remainder | Master |
-| **SC1b OverlapReceiver2** | CLC2 overlap (95% of CLC2 flow) | Master |
-| **SC2 DeveloperReceiver** | Developer/team share | Master |
-| **SC3 LoyaltyLevelVault** | Loyalty & Level + POINTS (CLC2 5%) | Master |
+| **SC1b OverlapReceiver2** | CLC2 fixed amount per tier | Master |
+| **SC2 DeveloperReceiver** | Developer/team (CLC1 + CLC2) | Master |
+| **SC3 LoyaltyLevelVault** | Loyalty & Level (CLC1); CLC2 $0.50 | Master |
 | **SC4 ReferralFeeHandler** | Cards Cashback | Master |
 | **SC5 FivePercentReceiver** | 5% of user payouts | Master, SC4 |
 
@@ -45,20 +45,19 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 
 ## SC1b — OverlapReceiver2
 
-**Role:** Receives the **CLC2 overlap** — 95% of the cash-in-flow-to-queue when a **CLC2 card** is auto-generated. Used only for CLC2; CLC1 queue remainder goes to SC1.
+**Role:** Receives a **fixed amount** when a **CLC2 card** is auto-generated. Used only for CLC2; CLC1 queue remainder goes to SC1.
 
 **When SC1b receives payment:**
 
 - **Only when a CLC2 card is generated** (a CLC1 card reaches cap and the system auto-mints a CLC2 card for that owner).  
-- SC1b receives **95%** of that CLC2 tier’s queue amount. The other 5% goes to SC3 (Loyalty Points & Level Points).  
-- The contract sends these amounts on every CLC2 generation; queue remainder (unallocated + overflow) goes to SC1, not SC1b.
+- SC1b receives a **fixed amount per tier** (not a percentage of queue). Queue remainder (unallocated + overflow) goes to SC1, not SC1b.
 
-| Tier    | Cash in flow to queue (CLC2) | SC1b receives (95%) | SC3 receives (5%) |
-|---------|------------------------------|----------------------|-------------------|
-| Bronze  | $5                           | $4.75                | $0.25             |
-| Platinum | $50                         | $47.50               | $2.50             |
-| Emerald | $250                         | $237.50              | $12.50            |
-| Diamond | $500                         | $475                 | $25               |
+| Tier    | SC1b receives (CLC2) |
+|---------|------------------------|
+| Bronze  | $2.25                  |
+| Platinum | $22.50                |
+| Emerald | $112.50                |
+| Diamond | $225                   |
 
 SC1b does **not** receive: first-mint overlap, unallocated remainder, or overflow (those go to SC1).
 
@@ -66,12 +65,12 @@ SC1b does **not** receive: first-mint overlap, unallocated remainder, or overflo
 
 ## SC2 — DeveloperReceiver
 
-**Role:** Developer/team profit per paid mint.
+**Role:** Developer/team profit on CLC1 paid mints and on CLC2 card generation.
 
 **When SC2 receives payment:**
 
-- **On every paid mint** (user mints a card with USDT).  
-- One transfer per mint; amount depends on tier only (not referrer or queue).
+1. **On every CLC1 paid mint** (user mints a card with USDT) — fixed amount per tier.  
+2. **When a CLC2 card is generated** — same fixed amount per tier as CLC1.
 
 | Tier     | SC2 receives (USDT) |
 |----------|----------------------|
@@ -101,16 +100,9 @@ Owner mints (no payment) do **not** send anything to SC2.
    | Diamond  | $125.5               |
 
 2. **When a CLC2 card is generated**  
-   SC3 receives **5%** of that CLC2 tier’s queue amount (“POINTS SC” share).
+   SC3 receives **$0.50** (all tiers).
 
-   | Tier   | Queue amount | SC3 receives (5%) |
-   |--------|--------------|---------------------|
-   | Bronze | $5           | $0.25               |
-   | Platinum | $50        | $2.50               |
-   | Emerald | $250       | $12.50              |
-   | Diamond | $500       | $25                 |
-
-On CLC2 **auto-mint**, the minter still gets loyalty points credited in SC3, but no separate USDT transfer for “Loyalty & Level” — only the 5% CLC2 flow above.
+On CLC2 **auto-mint**, the minter still gets loyalty points credited in SC3; USDT to SC3 is the fixed **$0.50** per CLC2 generation.
 
 ---
 
@@ -168,7 +160,7 @@ If SC5 is not set, Master sends the 5% CLC share to SC2 (DeveloperReceiver) inst
 | SC  | Receives when |
 |-----|----------------|
 | SC1 | First mint (overlap); any mint where queue is not fully absorbed (unallocated + overflow). CLC1 and CLC2. |
-| SC1b | Only when a CLC2 card is auto-minted; 95% of that tier’s queue amount. |
+| SC1b | Only when a CLC2 card is auto-minted; fixed amount per tier (e.g. Bronze $2.25, Diamond $225). |
 | SC2 | Every paid mint; fixed amount per tier. |
 | SC3 | Every paid mint (Loyalty & Level); plus when CLC2 is generated (5% of queue). |
 | SC4 | Every paid mint (full referral amount); then pays referrer + SC5 when applicable. |

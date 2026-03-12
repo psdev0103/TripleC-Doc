@@ -255,22 +255,23 @@ SC1 receives this queue money in exactly **two cases** (for both CLC1 and CLC2 m
 | Emerald  | $250 (5×$50)           |
 | Diamond  | $500 (5×$100)          |
 
-### 3.5 When a CLC2 card is generated (OverlapReceiver2)
+### 3.5 When a CLC2 card is generated (fixed amounts)
 
-When a CLC1 card reaches cap and a **CLC2 card is auto-minted**, the CLC2 cashflow uses the same queue amount as CLC1 for that tier. The contract:
+When a CLC1 card reaches cap and a **CLC2 card is auto-minted**, the CLC2 cashflow is:
 
 1. **Cash in flow to queue** — Same amount as CLC1 ($5 / $50 / $250 / $500). Distributed to previous cards (oldest first); any remainder or overflow goes to **SC1 OverlapReceiver**.
-2. **OverlapReceiver2 (SC1b)** — Receives **95%** of the queue amount (fixed per tier, not reduced by what was distributed to cards).
-3. **Loyalty Points & Level Points (SC3)** — Receives **5%** of the queue amount.
+2. **Developer & Team profit (SC2)** — Fixed amount per tier (same as CLC1 developer amount).
+3. **OverlapReceiver2 (SC1b)** — Fixed amount per tier.
+4. **SC3 Loyalty** — **$0.50** for all tiers.
 
-| Tier     | Cash in flow to queue | OverlapReceiver2 (SC1b) | Loyalty Points & Level Points (SC3) |
-|----------|------------------------|--------------------------|-------------------------------------|
-| Bronze   | $5                     | $4.75                    | $0.25                               |
-| Platinum | $50                    | $47.50                   | $2.50                               |
-| Emerald  | $250                   | $237.50                  | $12.50                              |
-| Diamond  | $500                   | $475                     | $25                                 |
+| Tier     | Cash in flow to queue | Developer & Team (SC2) | OverlapReceiver2 (SC1b) | SC3 Loyalty |
+|----------|------------------------|------------------------|--------------------------|-------------|
+| Bronze   | $5                     | $2.25                  | $2.25                    | $0.50       |
+| Platinum | $50                    | $27                    | $22.50                   | $0.50       |
+| Emerald  | $250                   | $137                   | $112.50                  | $0.50       |
+| Diamond  | $500                   | $274.50                | $225                     | $0.50       |
 
-- **OverlapReceiver2** is used only for CLC2: it receives the 95% share when a CLC2 card is generated. It does not receive first-mint overlap or queue remainder (those go to SC1).
+- **OverlapReceiver2** is used only for CLC2: it receives the fixed amount above when a CLC2 card is generated. It does not receive first-mint overlap or queue remainder (those go to SC1).
 - **Remainder to SC1:** Any queue amount not applied to previous cards (unallocated + overflow) goes to **SC1 OverlapReceiver** (see §3.3).
 
 ---
@@ -307,13 +308,12 @@ flowchart LR
     end
 
     User -->|"Mint price"| Master
-    Master -->|"Developer"| SC2
-    Master -->|"Loyalty & Level"| SC3
+    Master -->|"Developer (CLC1+CLC2)"| SC2
+    Master -->|"Loyalty (CLC1); CLC2 $0.50"| SC3
     Master -->|"Referral (Cashback)"| SC4
     Master -->|"Queue flow"| Queue
     Master -->|"Remainder / Overflow"| SC1
-    Master -->|"95% CLC2 queue"| SC1b
-    Master -->|"5% CLC2 queue"| SC3
+    Master -->|"CLC2 Overlap2 (tier)"| SC1b
     Master -->|"95% CLC payout"| UserWallet
     Master -->|"5% CLC payout"| SC5
     SC4 -->|"95% cashback"| Referrer
@@ -359,13 +359,15 @@ flowchart TB
         Master1 --> CLC2
     end
 
-    subgraph CLC2_mint["On CLC2 mint — queue flow"]
+    subgraph CLC2_mint["On CLC2 mint — fixed amounts"]
         Master2["Master"]
+        SC2_c["SC2 Developer"]
         SC1b["SC1b Overlap2"]
-        SC3["SC3 Loyalty"]
+        SC3["SC3 Loyalty $0.50"]
         SC1["SC1 Overlap"]
-        Master2 -->|"95% of queue"| SC1b
-        Master2 -->|"5% of queue"| SC3
+        Master2 -->|"Developer (tier)"| SC2_c
+        Master2 -->|"Overlap2 (tier)"| SC1b
+        Master2 -->|"$0.50"| SC3
         Master2 -->|"Remainder / overflow"| SC1
     end
 
@@ -405,8 +407,9 @@ flowchart TB
 
     subgraph Phase3["3. CLC2 generated (when CLC1 reaches cap)"]
         M3[Master]
-        M3 --> SC1b_1[SC1b 95% queue]
-        M3 --> SC3_2[SC3 5% queue]
+        M3 --> SC2_c[SC2 Developer tier]
+        M3 --> SC1b_1[SC1b Overlap2 tier]
+        M3 --> SC3_2[SC3 Loyalty $0.50]
         M3 --> SC1_2[SC1 remainder/overflow]
     end
 
@@ -424,7 +427,9 @@ flowchart TB
 **Legend**
 - **Queue → prev cards or SC1:** Queue amount is distributed to the oldest previous cards (1 or 5 by tier); any unallocated amount or overflow goes to SC1.
 - **SC1:** Receives first-mint overlap (when no cards exist) and all queue remainder/overflow on both CLC1 and CLC2 mints.
-- **SC1b:** Receives only when a CLC2 card is generated: 95% of that tier’s queue amount.
+- **SC1b:** Receives only when a CLC2 card is generated: fixed amount per tier (Bronze $2.25, Platinum $22.50, Emerald $112.50, Diamond $225).
+- **SC2:** Receives developer amount on every CLC1 mint and on every CLC2 generation (same fixed amount per tier).
+- **SC3:** Receives loyalty amount on CLC1 mint; on CLC2 generation receives $0.50 (all tiers).
 - **SC5:** Receives 5% of CLC payouts from Master and 5% of cashback payouts from SC4.
 
 ---
@@ -436,8 +441,8 @@ flowchart TB
 | **User wallet**        | Pays tier price on mint; receives 95% of CLC payouts and of Cards Cashback (when they are the referrer). |
 | **CustomNFT (Master)** | Holds queue reserve; distributes to previous cards; performs CLC payouts and CLC2 mint; sends shares to SC1, SC1b, SC2, SC3, SC4. |
 | **SC1 OverlapReceiver** | Receives all remainder USDT from the main card flow in queue: (1) when there are no cards in queue (or not enough to absorb the flow), and (2) when some USDT remains after queue cards receive their rewards (unallocated + overflow). Applies to both CLC1 and CLC2 mints. |
-| **SC1b OverlapReceiver2** | Receives 95% of the CLC2 flow amount (queue amount for that tier) when a CLC2 card is generated. All queue remainder goes to SC1 (see §3.3). |
-| **SC2 DeveloperReceiver** | Receives the fixed developer/team profit amount per mint. |
+| **SC1b OverlapReceiver2** | Receives a fixed amount when a CLC2 card is generated: Bronze $2.25, Platinum $22.50, Emerald $112.50, Diamond $225. All queue remainder goes to SC1 (see §3.3). |
+| **SC2 DeveloperReceiver** | Receives the fixed developer/team profit amount on every CLC1 paid mint and on every CLC2 card generation (same amount per tier). |
 | **SC5 FivePercentReceiver (5% SC)** | Receives only the 5% part of payments sent to user wallets: 5% of CLC payouts from Master and 5% of cashback payouts from SC4. |
-| **SC3 LoyaltyLevelVault** | Receives loyalty/level amount per paid mint; receives 5% of the CLC2 flow amount per CLC2 card generated (POINTS SC); holds USDT; credits points. |
+| **SC3 LoyaltyLevelVault** | Receives loyalty/level amount per CLC1 paid mint; receives **$0.50** per CLC2 card generated (all tiers); holds USDT; credits points. |
 | **SC4 ReferralFeeHandler** | Receives Cards Cashback amount on every paid mint. If a referrer exists, SC4 sends 95% to the referrer and 5% to SC5. If no referrer exists, the cashback amount stays in SC4. |
