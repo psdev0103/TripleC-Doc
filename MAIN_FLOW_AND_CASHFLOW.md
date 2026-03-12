@@ -95,34 +95,34 @@ Every **paid mint** splits the tier price as below. Amounts are in **USDT per ca
 
 ### 2.0 Cashflow summary by card (CLC1 and CLC2)
 
-For each tier, cashflow is split into **CLC1** (when the user mints a paid card) and **CLC2** (when a CLC2 card is auto-generated after a CLC1 card reaches cap). OverlapReceiver2 (SC1b) receives **95%** of the CLC2 queue flow; Loyalty Points & Level Points (SC3) receive **5%**.
+For each tier, cashflow is split into **CLC1** (when the user mints a paid card) and **CLC2** (when a CLC2 card is auto-generated after a CLC1 card reaches cap). CLC2 uses **fixed amounts** per tier: Developer & Team (SC2), OverlapReceiver2 (SC1b), and SC3 Loyalty ($0.5 for all tiers).
 
 **Bronze card ($10)**  
-| Phase | Cash in flow to queue | Referral Fee | Loyalty Points & Level Points | Developer & Team profit | OverlapReceiver2 (SC1b) |
-|-------|------------------------|--------------|--------------------------------|--------------------------|--------------------------|
+| Phase | Cash in flow to queue | Referral Fee | Loyalty (SC3) | Developer & Team (SC2) | OverlapReceiver2 (SC1b) |
+|-------|------------------------|--------------|---------------|--------------------------|--------------------------|
 | **CLC1** | $5 | $1 | $1.75 | $2.25 | — |
-| **CLC2** | $5 | — | $0.25 | — | $4.75 |
+| **CLC2** | $5 | — | $0.50 | $2.25 | $2.25 |
 
 **Platinum card ($100)**  
-| Phase | Cash in flow to queue | Referral Fee | Loyalty Points & Level Points | Developer & Team profit | OverlapReceiver2 (SC1b) |
-|-------|------------------------|--------------|--------------------------------|--------------------------|--------------------------|
+| Phase | Cash in flow to queue | Referral Fee | Loyalty (SC3) | Developer & Team (SC2) | OverlapReceiver2 (SC1b) |
+|-------|------------------------|--------------|---------------|--------------------------|--------------------------|
 | **CLC1** | $50 | $10 | $13 | $27 | — |
-| **CLC2** | $50 | — | $2.50 | — | $47.50 |
+| **CLC2** | $50 | — | $0.50 | $27 | $22.50 |
 
 **Emerald card ($500)**  
-| Phase | Cash in flow to queue | Referral Fee | Loyalty Points & Level Points | Developer & Team profit | OverlapReceiver2 (SC1b) |
-|-------|------------------------|--------------|--------------------------------|--------------------------|--------------------------|
+| Phase | Cash in flow to queue | Referral Fee | Loyalty (SC3) | Developer & Team (SC2) | OverlapReceiver2 (SC1b) |
+|-------|------------------------|--------------|---------------|--------------------------|--------------------------|
 | **CLC1** | $250 | $50 | $63 | $137 | — |
-| **CLC2** | $250 | — | $12.50 | — | $237.50 |
+| **CLC2** | $250 | — | $0.50 | $137 | $112.50 |
 
 **Diamond card ($1000)**  
-| Phase | Cash in flow to queue | Referral Fee | Loyalty Points & Level Points | Developer & Team profit | OverlapReceiver2 (SC1b) |
-|-------|------------------------|--------------|--------------------------------|--------------------------|--------------------------|
+| Phase | Cash in flow to queue | Referral Fee | Loyalty (SC3) | Developer & Team (SC2) | OverlapReceiver2 (SC1b) |
+|-------|------------------------|--------------|---------------|--------------------------|--------------------------|
 | **CLC1** | $500 | $100 | $125.5 | $274.5 | — |
-| **CLC2** | $500 | — | $25 | — | $475 |
+| **CLC2** | $500 | — | $0.50 | $274.5 | $225 |
 
 - **CLC1:** Queue flow is distributed to previous cards (oldest first); remainder/overflow → SC1 OverlapReceiver. Referral Fee goes to SC4; when a referrer exists, SC4 pays 95% to referrer and 5% to SC5.
-- **CLC2:** Queue flow is distributed to previous cards; **95%** of the queue amount is sent to **OverlapReceiver2 (SC1b)** and **5%** to **Loyalty Points & Level Points (SC3)**. Any queue remainder (unallocated + overflow) goes to SC1 OverlapReceiver, not SC1b.
+- **CLC2:** Queue flow is distributed to previous cards; then **fixed amounts** go to **Developer & Team (SC2)**, **OverlapReceiver2 (SC1b)**, and **SC3 Loyalty ($0.50)**. Any queue remainder (unallocated + overflow) goes to SC1 OverlapReceiver.
 
 ---
 
@@ -275,7 +275,161 @@ When a CLC1 card reaches cap and a **CLC2 card is auto-minted**, the CLC2 cashfl
 
 ---
 
-## Part 4 — Contract roles (cash flow)
+## Part 4 — Cashflow diagrams (all USDT flows)
+
+The following diagrams show **all USDT flows** between the user, cards, and smart contracts (SCs). Amounts are per-tier; see Part 2 and Part 3 for exact figures.
+
+### 4.1 Overview: all parties and flows
+
+```mermaid
+flowchart LR
+    subgraph Sources
+        User["👤 User (minter)"]
+    end
+
+    subgraph Core
+        Master["📜 Master\n(CustomNFT)"]
+        Queue["📋 Queue / Reserve\n(previous cards)"]
+    end
+
+    subgraph SCs["Smart contracts"]
+        SC1["SC1 Overlap"]
+        SC1b["SC1b Overlap2"]
+        SC2["SC2 Developer"]
+        SC3["SC3 Loyalty"]
+        SC4["SC4 Referral"]
+        SC5["SC5 5%"]
+    end
+
+    subgraph Recipients
+        UserWallet["👤 User wallet\n(payouts)"]
+        Referrer["👤 Referrer\n(cashback)"]
+    end
+
+    User -->|"Mint price"| Master
+    Master -->|"Developer"| SC2
+    Master -->|"Loyalty & Level"| SC3
+    Master -->|"Referral (Cashback)"| SC4
+    Master -->|"Queue flow"| Queue
+    Master -->|"Remainder / Overflow"| SC1
+    Master -->|"95% CLC2 queue"| SC1b
+    Master -->|"5% CLC2 queue"| SC3
+    Master -->|"95% CLC payout"| UserWallet
+    Master -->|"5% CLC payout"| SC5
+    SC4 -->|"95% cashback"| Referrer
+    SC4 -->|"5% cashback"| SC5
+    Queue -.->|"Reward to cards"| Master
+```
+
+### 4.2 CLC1 paid mint — where the tier price goes
+
+When a user mints a card (CLC1), the full tier price is split as below. “Queue” is then distributed to previous cards or sent to SC1 as remainder/overflow.
+
+```mermaid
+flowchart TB
+    User["👤 User"]
+    Master["Master"]
+    SC2["SC2 Developer"]
+    SC3["SC3 Loyalty"]
+    SC4["SC4 Referral"]
+    SC1["SC1 Overlap"]
+    Reserve["Queue reserve\n→ previous cards\nor remainder → SC1"]
+
+    User -->|"$10 / $100 / $500 / $1000"| Master
+    Master -->|"Bronze $2.25, Plat $27, etc."| SC2
+    Master -->|"Bronze $1.75, Plat $13, etc."| SC3
+    Master -->|"Bronze $1, Plat up to $10, etc."| SC4
+    Master -->|"Bronze $5, Plat $50, etc."| Reserve
+    Reserve -->|"Remainder / overflow"| SC1
+```
+
+### 4.3 Card reaches cap — payout and CLC2 generation
+
+When a **CLC1** card’s reward balance reaches the CLC1 cap, the contract pays the owner and may auto-mint a CLC2 card. When a **CLC2** card reaches the CLC2 cap, the contract pays the owner and dismisses the card.
+
+```mermaid
+flowchart TB
+    subgraph CLC1_cap["CLC1 card reaches cap"]
+        Master1["Master"]
+        User1["👤 Card owner"]
+        SC5a["SC5 5%"]
+        CLC2["CLC2 card minted"]
+        Master1 -->|"95% (e.g. $10 / $100)"| User1
+        Master1 -->|"5%"| SC5a
+        Master1 --> CLC2
+    end
+
+    subgraph CLC2_mint["On CLC2 mint — queue flow"]
+        Master2["Master"]
+        SC1b["SC1b Overlap2"]
+        SC3["SC3 Loyalty"]
+        SC1["SC1 Overlap"]
+        Master2 -->|"95% of queue"| SC1b
+        Master2 -->|"5% of queue"| SC3
+        Master2 -->|"Remainder / overflow"| SC1
+    end
+
+    subgraph CLC2_cap["CLC2 card reaches cap"]
+        Master3["Master"]
+        User2["👤 Card owner"]
+        SC5b["SC5 5%"]
+        Master3 -->|"95%"| User2
+        Master3 -->|"5%"| SC5b
+    end
+
+    CLC1_cap --> CLC2_mint
+```
+
+### 4.4 Full cashflow by phase (all cards and SCs)
+
+Single diagram summarizing **all USDT flows** by phase: CLC1 mint, queue/overlap, CLC payout, CLC2 generation, and SC4 cashback.
+
+```mermaid
+flowchart TB
+    subgraph Phase1["1. CLC1 paid mint"]
+        U1[User pays]
+        M1[Master]
+        U1 --> M1
+        M1 --> SC2_1[SC2 Developer]
+        M1 --> SC3_1[SC3 Loyalty]
+        M1 --> SC4_1[SC4 Referral]
+        M1 --> Q1[Queue → prev cards or SC1]
+        Q1 --> SC1_1[SC1 remainder/overflow]
+    end
+
+    subgraph Phase2["2. Card reaches cap (CLC1 or CLC2)"]
+        M2[Master]
+        M2 --> U2[User 95%]
+        M2 --> SC5_1[SC5 5%]
+    end
+
+    subgraph Phase3["3. CLC2 generated (when CLC1 reaches cap)"]
+        M3[Master]
+        M3 --> SC1b_1[SC1b 95% queue]
+        M3 --> SC3_2[SC3 5% queue]
+        M3 --> SC1_2[SC1 remainder/overflow]
+    end
+
+    subgraph Phase4["4. SC4 cashback payout (when referrer exists)"]
+        SC4_2[SC4 Referral]
+        SC4_2 --> Ref[Referrer 95%]
+        SC4_2 --> SC5_2[SC5 5%]
+    end
+
+    Phase1 --> Phase2
+    Phase1 --> Phase3
+    Phase2 --> Phase3
+```
+
+**Legend**
+- **Queue → prev cards or SC1:** Queue amount is distributed to the oldest previous cards (1 or 5 by tier); any unallocated amount or overflow goes to SC1.
+- **SC1:** Receives first-mint overlap (when no cards exist) and all queue remainder/overflow on both CLC1 and CLC2 mints.
+- **SC1b:** Receives only when a CLC2 card is generated: 95% of that tier’s queue amount.
+- **SC5:** Receives 5% of CLC payouts from Master and 5% of cashback payouts from SC4.
+
+---
+
+## Part 5 — Contract roles (cash flow)
 
 | Contract / destination | Role in cash flow |
 |------------------------|-------------------|
