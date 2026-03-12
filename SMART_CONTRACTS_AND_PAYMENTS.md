@@ -102,7 +102,7 @@ Owner mints (no payment) do **not** send anything to SC2.
 2. **When a CLC2 card is generated**  
    SC3 receives **$0.50** (all tiers).
 
-On CLC2 **auto-mint**, the minter still gets loyalty points credited in SC3; USDT to SC3 is the fixed **$0.50** per CLC2 generation.
+On CLC2 **auto-mint**, no loyalty/card points are credited (card points are from CLC1 mints only); USDT to SC3 is the fixed **$0.50** per CLC2 generation.
 
 ---
 
