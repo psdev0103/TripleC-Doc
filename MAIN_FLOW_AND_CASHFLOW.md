@@ -58,7 +58,7 @@ User approves USDT → mintWithPayment(to, referrer, tier)
   └─ If any previous card reached cap during this distribution:
        → Payout to that card’s owner (95% / 5%)
        → If CLC1: optionally auto-mint CLC2 for owner (from reserve)
-       → On CLC2 mint: flow in row queue (see 3.4) + CLC2 Overlap to SC1b + $0.5 to POINTS SC (SC3)
+       → On CLC2 mint: flow in row queue (see 3.4) + 95% of flow to SC1b + 5% of flow to POINTS SC (SC3)
 ```
 
 ---
@@ -180,18 +180,18 @@ Every **paid mint** splits the tier price as below. Amounts are in **USDT per ca
 
 ### 3.4 When a CLC2 card is generated
 
-When a CLC1 card reaches cap and a **CLC2 card is auto-minted**, the following split applies (from the CLC2 funding amount):
+When a CLC1 card reaches cap and a **CLC2 card is auto-minted**, the following split applies (from the CLC2 funding amount = flow in row queue for that tier):
 
 | Tier     | Flow in row queue       | To CLC2 Overlap SC (SC1b) | To POINTS SC (SC3) |
 |----------|--------------------------|----------------------------|---------------------|
-| Bronze   | $5                       | $4.5                       | $0.5                |
-| Platinum | $50 ($10 × 5)            | $49.5                      | $0.5                |
-| Emerald  | $250 ($50 × 5)           | $249.5                     | $0.5                |
-| Diamond  | $500 ($100 × 5)          | $499.5                     | $0.5                |
+| Bronze   | $5                       | $5 × 0.95 = $4.75         | $5 × 0.05 = $0.25   |
+| Platinum | $50 ($10 × 5)            | $50 × 0.95 = $47.50       | $50 × 0.05 = $2.50  |
+| Emerald  | $250 ($50 × 5)           | $250 × 0.95 = $237.50     | $250 × 0.05 = $12.50 |
+| Diamond  | $500 ($100 × 5)          | $500 × 0.95 = $475        | $500 × 0.05 = $25   |
 
 - **Flow in row queue:** Distributed to the oldest previous cards (same rules as a paid mint).
-- **CLC2 Overlap SC (SC1b):** OverlapReceiver2 receives the fixed amount; any unallocated queue remainder also goes to SC1b.
-- **POINTS SC (SC3):** LoyaltyLevelVault receives $0.5 per CLC2 card generated.
+- **CLC2 Overlap SC (SC1b):** OverlapReceiver2 receives **95%** of the flow amount; any unallocated queue remainder also goes to SC1b.
+- **POINTS SC (SC3):** LoyaltyLevelVault receives **5%** of the flow amount per CLC2 card generated.
 
 ---
 
@@ -202,8 +202,8 @@ When a CLC1 card reaches cap and a **CLC2 card is auto-minted**, the following s
 | **User wallet**        | Pays tier price on mint; receives 95% of CLC payouts and of Cards Cashback (when they are the referrer). |
 | **CustomNFT (Master)** | Holds queue reserve; distributes to previous cards; performs CLC payouts and CLC2 mint; sends shares to SC1, SC1b, SC2, SC3, SC4. |
 | **SC1 OverlapReceiver** | Receives queue overflow and first-mint overlap (CLC1). |
-| **SC1b OverlapReceiver2** | Receives CLC2 overlap ($4.5 / $49.5 / $249.5 / $499.5 per tier) and any CLC2 queue remainder when a CLC2 card is generated. |
+| **SC1b OverlapReceiver2** | Receives 95% of the CLC2 flow amount (queue amount for that tier) and any CLC2 queue remainder when a CLC2 card is generated. |
 | **SC2 DeveloperReceiver** | Receives the fixed developer/team profit amount per mint. |
 | **SC5 FivePercentReceiver (5% SC)** | Receives only the 5% part of payments sent to user wallets: 5% of CLC payouts from Master and 5% of cashback payouts from SC4. |
-| **SC3 LoyaltyLevelVault** | Receives loyalty/level amount per paid mint; receives $0.5 per CLC2 card generated (POINTS SC); holds USDT; credits points. |
+| **SC3 LoyaltyLevelVault** | Receives loyalty/level amount per paid mint; receives 5% of the CLC2 flow amount per CLC2 card generated (POINTS SC); holds USDT; credits points. |
 | **SC4 ReferralFeeHandler** | Receives Cards Cashback amount on every paid mint. If a referrer exists, SC4 sends 95% to the referrer and 5% to SC5. If no referrer exists, the cashback amount stays in SC4. |
