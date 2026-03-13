@@ -8,13 +8,36 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 
 | Contract | Role | Receives from |
 |----------|------|----------------|
-| **CustomNFT (Master)** | Holds reserve; distributes queue; pays out CLC; sends to SC1, SC1b, SC2, SC3, SC4, SC5 | User (mint price) |
+| **CustomNFT (Master)** | Holds reserve; distributes queue; pays out CLC; sends to SC1, SC1b, SC2, SC3, SC4, SC5, Gift Card SC | User (mint price) |
+| **Gift Card SC (GiftCardReceiver)** | Gift card CLC1/CLC2 cap payouts | Master |
 | **SC1 OverlapReceiver** | Queue remainder | Master |
 | **SC1b OverlapReceiver2** | CLC2 fixed amount per tier | Master |
 | **SC2 DeveloperReceiver** | Developer/team (CLC1 + CLC2) | Master |
 | **SC3 LoyaltyLevelVault** | Loyalty & Level (CLC1); CLC2 $0.50 | Master |
 | **SC4 ReferralFeeHandler** | Cards Cashback | Master |
 | **SC5 FivePercentReceiver** | 5% of user payouts | Master, SC4 |
+
+---
+
+## Gift Card SC — GiftCardReceiver
+
+**Role:** Receives USDT when a **gift card** reaches CLC1 cap or CLC2 cap. No user payout for gift cards; those amounts go to this contract instead.
+
+**When Gift Card SC receives payment:**
+
+1. **Gift CLC1 cap reached** — **$1000** (when the gift card’s reward balance reaches the CLC1 cap of $2500). At the same time, Master sends $126 to SC3, $374 to SC1, and uses $1000 to auto-mint the gift CLC2 card.
+2. **Gift CLC2 cap reached** — **$1000** (when the gift CLC2 card’s reward balance reaches the CLC2 cap of $1000). No payout to the user.
+
+**When Gift Card SC sends $2000:**
+
+$2000 is sent to the gift card user when **both** conditions are met (once per user):
+
+1. **Loyalty users minted 10 Diamond cards** — Users who have the gift card user as referrer have minted 10 Diamond cards in total (verified off-chain by admin).
+2. **Gift CLC2 card reached max cap** — The user’s gift CLC2 card has reached its max cap (Master calls `onGiftCLC2CapReached(beneficiary)` to record this).
+
+When both are true, an admin calls `payoutBothConditionsMet(giftCardUser)` to send **$2000 USDT** to that user.
+
+The owner of the Gift Card SC contract can withdraw any remaining USDT via `withdrawToken`.
 
 ---
 
@@ -165,3 +188,4 @@ If SC5 is not set, Master sends the 5% CLC share to SC2 (DeveloperReceiver) inst
 | SC3 | Every paid mint (Loyalty & Level); plus when CLC2 is generated (5% of queue). |
 | SC4 | Every paid mint (full referral amount); then pays referrer + SC5 when applicable. |
 | SC5 | When Master pays a card owner at cap (5% of payout); when SC4 pays a referrer (5% of cashback). |
+| Gift Card SC | Receives: CLC1 cap $1000, CLC2 cap $1000. Sends: $2000 to gift card user when both conditions met (10 Diamond by referrals + gift CLC2 cap reached; admin trigger). |

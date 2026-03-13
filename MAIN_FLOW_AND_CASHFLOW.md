@@ -182,6 +182,33 @@ For each tier, cashflow is split into **CLC1** (when the user mints a paid card)
 
 ---
 
+### 2.5 Gift card — $0 (admin only; recipient must have never minted)
+
+Gift cards are **not paid by the user**. An admin sends a gift card to a wallet that has **never minted any card** (contract enforces `balanceOf(to) == 0`). The gift card uses the same queue flow as other cards (receives from later mints); when caps are reached, payouts go to **Gift Card SC**, **SC3**, and **SC1** instead of the user.
+
+**Eligibility:** Only wallets with **zero** cards can receive a gift card. The admin page checks eligibility and the contract reverts if the recipient already owns any card.
+
+**Referrer condition:** A gift card user is treated as **Condition D** (level 4) for Cards Cashback: when someone they referred mints, the cashback amount is the same as if the referrer had a Diamond card.
+
+**CLC1 ($0 user payment; cap $2500):**
+
+| When CLC1 cap is reached | Destination | Amount (USDT) |
+|--------------------------|-------------|---------------|
+| Gift Card SC             | $1000       | |
+| SC3 Loyalty (POINTS)     | $126        | |
+| SC1 Overlap              | $374        | |
+| CLC2 mint                | $1000       | (auto-mint CLC2 card for same owner) |
+
+**CLC2 (gift CLC2; cap $1000):** Same queue/developer/overlap flow as a normal Diamond CLC2 when the gift CLC2 card is **generated** (Developer SC2 $274.5, SC1b $225, SC3 $0.50; queue remainder → SC1). When the **gift CLC2 card is generated**, an additional **$500** goes to **SC1 Overlap**. When the gift CLC2 card **reaches cap** ($1000), **$1000** goes to **Gift Card SC** (no user payout).
+
+| Phase | Gift Card SC | SC3 | SC1 Overlap | CLC2 / SC2 / SC1b |
+|-------|--------------|-----|-------------|--------------------|
+| **Gift CLC1 cap** | $1000 | $126 | $374 | $1000 to mint CLC2 |
+| **Gift CLC2 generated** | — | $0.50 | $500 (+ queue remainder) | SC2 $274.5, SC1b $225 |
+| **Gift CLC2 cap** | $1000 | — | — | — |
+
+---
+
 ## Part 3 — Summary tables
 
 ### 3.1 Fixed amounts per tier (USDT per mint)
