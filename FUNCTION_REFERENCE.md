@@ -29,6 +29,8 @@ Quick reference for all contract and frontend functions.
 | `setSc2Developer(addr)` | external, owner | Set SC2 (DeveloperReceiver). |
 | `setSc3Loyalty(addr)` | external, owner | Set SC3 (LoyaltyLevelVault). |
 | `setSc4Referral(addr)` | external, owner | Set SC4 (ReferralFeeHandler). |
+| `setGiftCardReceiver(addr)` | external, owner | Set Gift Card SC (GiftCardReceiver). |
+| `safeMintGift(to)` | external | Mint a gift card to `to`. Reverts if `balanceOf(to) != 0`. No payment; any caller. |
 
 **Internal / private (called during mint or reward):**  
 `_processMint`, `_distributeToPrevTokens`, `_accrueReward`, `_maybeAutoMint`, `_getRewardCap`, `_getWithdrawAmount`, `_setTierConfigs`, `_setReferrer`, `_loyaltyLevelPointsForTier`.
@@ -71,6 +73,18 @@ Quick reference for all contract and frontend functions.
 | `processReferralPayment(referrer, totalAmount)` | external | Only Master. Splits 95% to referrer, 5% to DeveloperReceiver (SC2). |
 | `withdrawToken(to, amount)` | external, owner | Withdraw any USDT held in SC4 (e.g. when no referrer was set) to `to`. |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
+
+---
+
+### GiftCardReceiver (Gift Card SC)
+
+| Function | Type | Description |
+|----------|------|-------------|
+| `onGiftCLC2CapReached(beneficiary)` | external | Only Master. Records that this user’s gift CLC2 card reached cap (condition 2). |
+| `payoutBothConditionsMet(giftCardUser)` | external | Owner only. Sends $2000 USDT to `giftCardUser` when condition 2 is set and not yet paid; admin must verify condition 1 (10 Diamond by referrals) off-chain. |
+| `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
+| `setPaymentToken(token)` | external, owner | Set USDT token address. |
+| `withdrawToken(token, to, amount)` | external, owner | Withdraw ERC20 to `to`. |
 
 ---
 

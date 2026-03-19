@@ -15,7 +15,7 @@ A **gift card** is a special card sent by an **admin** to a wallet that has **ne
 ### 1.2 Eligibility
 
 - **Only wallets with zero cards** can receive a gift card.
-- The contract enforces this: `mintGiftCard(to)` reverts if `balanceOf(to) != 0`.
+- The contract enforces this: `safeMintGift(to)` reverts if `balanceOf(to) != 0` (ErrUserAlreadyMinted).
 - The admin frontend checks eligibility (e.g. “Never minted”) before sending.
 
 ---
@@ -24,7 +24,7 @@ A **gift card** is a special card sent by an **admin** to a wallet that has **ne
 
 1. Admin opens the **Gift Card** admin page.
 2. Admin enters the **recipient wallet** and checks eligibility (backend/contract: user has never minted).
-3. Admin calls the **CustomNFT (Master)** function `mintGiftCard(to)`. No payment is required; the contract mints one **Gift** tier card to `to`.
+3. Admin calls the **CustomNFT (Master)** function **`safeMintGift(to)`** (e.g. from the admin Gift Card page). No payment is required; the contract mints one **Gift** tier card to `to`. (The contract allows any caller; in practice the admin frontend calls it.)
 4. The gift card is a **CLC1 card** (same queue logic as other tiers). It receives “queue amount” from **later mints** — in particular, from mints by users who have this gift card user as **referrer**.
 
 ---
@@ -50,7 +50,7 @@ When the gift CLC1 card’s reward balance reaches **$2500**, the Master contrac
 
 There is **no direct payout to the user** at CLC1 cap; the user’s CLC2 card is created and will receive flow until it reaches its cap.
 
-If the contract **reserve** is insufficient for this $1500 payout (1000 + 126 + 374), the contract **defers** the gift cap payout instead of reverting: the mint that would have triggered it still succeeds, and the deferred payout is processed on a later paid mint when reserve allows. This prevents “all mints failing” when a gift card hits cap with low reserve.
+The contract requires **contractReserve ≥ $2500** when the gift CLC1 cap is reached: $1500 for the cap payout (1000 + 126 + 374) and $1000 for the CLC2 generation that follows. Otherwise it reverts with `ErrReserveGiftCap`. So the contract must hold at least 2500 USDT in reserve when a gift card is about to hit cap (e.g. from ongoing mints).
 
 **Gift CLC2 generation — same cash flow as Diamond CLC2 ($1000)**  
 When the gift CLC1 cap is reached, the contract uses **$1000** (amountForNewCard) from reserve to generate the gift CLC2 card. That **$1000** is paid out in the **same way** as a Diamond CLC2:
@@ -75,7 +75,7 @@ When the **gift CLC2** card’s reward balance reaches **$1000**:
 |------------------|----------------|-------------------------------------------|
 | **Gift Card SC** | $1000          | Master calls `onGiftCLC2CapReached(beneficiary)` |
 
-Again, no user payout; the Gift Card SC records that **condition 2** is met for that beneficiary. If reserve is insufficient, this payout is also **deferred** and processed when reserve allows.
+Again, no user payout; the Gift Card SC records that **condition 2** is met for that beneficiary. The contract requires **contractReserve ≥ $1000** when the gift CLC2 cap is reached; otherwise it reverts with `ErrReserveGiftCLC2`.
 
 ---
 
