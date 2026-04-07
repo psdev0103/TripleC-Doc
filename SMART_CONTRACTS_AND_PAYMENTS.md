@@ -145,9 +145,9 @@ On CLC2 **auto-mint**, no loyalty/card points are credited (card points are from
 | Emerald  | up to $50                    |
 | Diamond  | up to $100                   |
 
-When a referrer exists and is qualified, SC4 **pays out** part of that balance: **95% to the referrer**, **5% to SC5**. The rest stays in SC4 until used. If there is no referrer, the full amount stays in SC4.
+When a referrer exists and is qualified, SC4 **pays out** part of that balance: **5% to SC5**; **95%** is transferred to **Master** and credited onto the **referrer’s CLC1 cards in queue** (same accrual rules as mint queue flow). If the referrer has **no CLC1 card**, the **95% stays in SC4**. The remainder of what SC4 received (above the condition-based payout) stays in SC4 until used. If there is no referrer, the full amount stays in SC4.
 
-So: **SC4 receives** on every paid mint; **referrer and SC5 receive** only when SC4 runs payout (referrer exists and condition-based amount > 0).
+So: **SC4 receives** on every paid mint; **SC5 and Master (referrer queue)** receive only when SC4 runs payout (referrer exists and condition-based amount > 0).
 
 ---
 
@@ -161,7 +161,7 @@ So: **SC4 receives** on every paid mint; **referrer and SC5 receive** only when 
    When a card (CLC1 or CLC2) reaches cap and the contract pays the owner, the split is 95% to owner, 5% to SC5. So SC5 receives **5% of each CLC payout** (wallet payout when cap is reached).
 
 2. **From SC4 — Cashback payout**  
-   When SC4 pays a referrer (Cards Cashback), it sends 95% to the referrer and **5% to SC5**. So SC5 receives 5% of each cashback payout.
+   When SC4 runs Cards Cashback for a referrer, it sends **5% to SC5** and credits **95%** onto the referrer’s CLC1 cards on Master (or keeps the 95% in SC4 if the referrer has no CLC1 card). So SC5 receives 5% of each cashback payout.
 
 If SC5 is not set, Master sends the 5% CLC share to SC2 (DeveloperReceiver) instead.
 
