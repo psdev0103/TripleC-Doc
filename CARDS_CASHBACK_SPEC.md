@@ -101,8 +101,8 @@ Split for every paid cashback: **95% to the referrer’s CLC1 cards in queue** o
 
 ## 4. Implementation notes
 
-- **On-chain:** The NFT contract computes **the referrer’s** condition (1–4) from the **first minted card** (smallest CLC1 tokenId) and **upgrades** when that card is completed in CLC2 (reward complete + auto-minted), using the next CLC1 in queue; condition is never downgraded. View functions: `getReferrerCashbackLevel(referrer)`, `referrerHasCLC1InQueue(referrer)`. The referred user’s condition or history does not affect the cashback amount; only the referrer’s level and the tier of the card just minted do.
-- **Payment flow:** On each paid mint, the contract sends the cashback amount to SC4 (ReferralFeeHandler). If a referrer exists, SC4 sends 5% to SC5 (or SC2 if SC5 is not set) and pulls the 95% into Master via `creditReferralToReferrerQueue` when `referrerHasCLC1InQueue` is true; otherwise the 95% stays in SC4. If no referrer exists, the cashback amount remains in SC4.
+- **On-chain:** The NFT contract computes **the referrer’s** condition (1–4) from the **first minted card** (smallest CLC1 tokenId) and **upgrades** when that card is completed in CLC2 (reward complete + auto-minted), using the next CLC1 in queue; condition is never downgraded. View function: `getReferrerCashbackLevel(referrer)`. The referred user’s condition or history does not affect the cashback amount; only the referrer’s level and the tier of the card just minted do.
+- **Payment flow:** On each paid mint, the contract sends the cashback amount to SC4 (ReferralFeeHandler). If a referrer exists, Master calls `processReferralPayment` with a flag indicating whether the referrer has any CLC1 card. SC4 sends 5% to SC5 (or SC2 if SC5 is not set) and pulls the 95% into Master via `creditReferralToReferrerQueue` when that flag is true; otherwise the 95% stays in SC4. If no referrer exists, the cashback amount remains in SC4.
 - **Backend:** When recording a referral fee (e.g. for history), the backend reads the **referrer’s** cashback level from the contract and uses the same table so stored amounts match on-chain payouts.
 
 ---

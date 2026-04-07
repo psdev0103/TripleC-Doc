@@ -17,7 +17,6 @@ Quick reference for all contract and frontend functions.
 | `withdrawRewards(tokenId)` | external | Withdraw CLC reward to wallet. Owner only; requires `rewardComplete`. CLC2: after withdraw, card is dismissed. |
 | `claimCLC2(tokenId)` | external | Owner only. Mint deferred CLC2 card when reserve was insufficient at completion (batch mint). |
 | `getReferrerCashbackLevel(referrer)` | view | Returns referrer's Cards Cashback qualification level (1–4). Condition 2 = has Platinum + Bronze CLC2 done; 3 = Emerald + Bronze & Platinum CLC2 done; 4 = Diamond + all lower CLC2 done. |
-| `referrerHasCLC1InQueue(referrer)` | view | True if referrer owns at least one CLC1 card (SC4 may credit the 95% cashback share onto the queue). |
 | `creditReferralToReferrerQueue(referrer, amount)` | external | Only SC4. Pulls USDT from SC4 and accrues `amount` onto the referrer’s CLC1 cards (queue order). |
 | `totalSupply()` | view | Number of tokens minted. |
 | `tierOf(tokenId)` | view | Tier (0–3) of the card. |
@@ -72,7 +71,7 @@ Quick reference for all contract and frontend functions.
 
 | Function | Type | Description |
 |----------|------|-------------|
-| `processReferralPayment(referrer, totalAmount)` | external | Only Master. Splits 5% to SC5 (or SC2 if SC5 unset); 95% pulled by Master onto referrer’s CLC1 card queue, or left in SC4 if referrer has no CLC1 card. |
+| `processReferralPayment(referrer, totalAmount, referrerHasCLC1Cards)` | external | Only Master. Master passes whether the referrer has a CLC1 card. Splits 5% to SC5 (or SC2 if SC5 unset); 95% pulled onto referrer’s CLC1 queue when `referrerHasCLC1Cards`, else left in SC4. |
 | `withdrawToken(to, amount)` | external, owner | Withdraw any USDT held in SC4 (e.g. when no referrer was set) to `to`. |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
 
