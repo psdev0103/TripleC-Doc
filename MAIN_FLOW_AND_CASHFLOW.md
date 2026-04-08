@@ -33,7 +33,7 @@ This document describes the **main user and system flow** and the **cash flow** 
 
 8. **Points & history**  
    - **Loyalty & Level points** are credited in SC3 when the user mints (CLC1 only; CLC2 does not add points).  
-   - **Cards Cashback history** shows USDT the user received as a referrer when their referrals minted (95% of cashback per mint).
+   - **Cards Cashback history** shows the full condition-based cashback recorded when referrals mint (credited to the referrer’s card queue on-chain, or retained in SC4 if they had no NFT).
 
 ---
 
