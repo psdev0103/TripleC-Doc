@@ -44,7 +44,7 @@ When the gift CLC1 card’s reward balance reaches **$2500**, the Master contrac
 | Destination        | Amount (USDT) | Note                          |
 |--------------------|----------------|-------------------------------|
 | **Gift Card SC**   | $1000          | Received by GiftCardReceiver  |
-| **SC3 Loyalty**    | $126           | POINTS vault                  |
+| **SC3 Loyalty**    | $126           | POINTS vault (same slice as Diamond CLC1 mint’s SC3 share); Master credits **loyalty points** to the gift owner and **level points** to their referral upline — see [CARDS_POINTS.md](CARDS_POINTS.md) |
 | **SC1 Overlap**    | $374           | OverlapReceiver               |
 | **CLC2 mint**      | $1000          | Auto-mints gift CLC2 for owner |
 
