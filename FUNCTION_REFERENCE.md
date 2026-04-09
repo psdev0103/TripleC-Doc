@@ -31,7 +31,8 @@ Quick reference for all contract and frontend functions.
 | `setSc3Loyalty(addr)` | external, owner | Set SC3 (LoyaltyLevelVault). |
 | `setSc4Referral(addr)` | external, owner | Set SC4 (ReferralFeeHandler). |
 | `setGiftCardReceiver(addr)` | external, owner | Set Gift Card SC (GiftCardReceiver). |
-| `safeMintGift(to)` | external | Mint a gift card to `to`. Reverts if `balanceOf(to) != 0`. No payment; any caller. |
+| `safeMintGift(to)` | external | Mint a gift card to `to`. Reverts if `balanceOf(to) != 0`. No payment; gift minter only. |
+| `safeMintGift(to, referrer)` | external | Same; optional `referrer` sets `referredBy[to]` when unset (like first paid mint), so upline earns Loyalty Points when `to`’s downline mints. Use when the recipient may only ever hold the gift card. |
 
 **Internal / private (called during mint or reward):**  
 `_processMint`, `_distributeToPrevTokens`, `_accrueReward`, `_maybeAutoMint`, `_getRewardCap`, `_getWithdrawAmount`, `_setTierConfigs`, `_setReferrer`, `_loyaltyLevelPointsForTier`.

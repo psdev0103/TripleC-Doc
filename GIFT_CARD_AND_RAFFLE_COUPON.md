@@ -24,7 +24,7 @@ A **gift card** is a special card sent by an **admin** to a wallet that has **ne
 
 1. Admin opens the **Gift Card** admin page.
 2. Admin enters the **recipient wallet** and checks eligibility (backend/contract: user has never minted).
-3. Admin calls the **CustomNFT (Master)** function **`safeMintGift(to)`** (e.g. from the admin Gift Card page). No payment is required; the contract mints one **Gift** tier card to `to`. (The contract allows any caller; in practice the admin frontend calls it.)
+3. Admin calls **`safeMintGift(to)`** or **`safeMintGift(to, referrer)`** on **CustomNFT (Master)** (admin Gift Card page). No payment is required; the contract mints one **Gift** tier card to `to`. If the recipient may **never** do a paid first mint, pass **`referrer`** as the wallet that referred them (optional). That sets `referredBy[to]` on-chain so when the recipient’s **downline** mints, **Loyalty Points** (`levelPoints`) credit the full upline (e.g. recipient + their referrer). Omit `referrer` only when there is no referrer or it will be set on the recipient’s first paid mint later.
 4. The gift card is a **CLC1 card** (same queue logic as other tiers). It receives “queue amount” from **later mints** — in particular, from mints by users who have this gift card user as **referrer**.
 
 ---

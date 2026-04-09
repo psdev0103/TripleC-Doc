@@ -1,109 +1,117 @@
-# How Users Get Cards Points (Loyalty & Level Points)
+# How Users Get Card Points & Loyalty Points
 
-Cards points are **loyalty points** and **level points** stored on-chain in **SC3 LoyaltyLevelVault**. They are credited automatically when users mint cards or when someone they referred mints. The frontend and backend read these from the contract (or from a synced DB cache).
-
----
-
-## Two types of points
-
-| Type | Who gets them | How they are earned |
-|------|----------------|----------------------|
-| **Loyalty points** | The **minter** / **gift card owner** | Paid CLC1 mints; **gift CLC1** +1,000 when CLC1 hits **cap** (see Gift section). CLC2 does not add. |
-| **Level points** | **Referrers** in the chain (up to 5) | When someone you referred **mints paid CLC1**, or when a referred **gift card user’s CLC1 hits cap** (Diamond-equivalent upline credits) |
-
-**Total points** (shown in the app) = loyalty points + level points.
+The app shows two balances on the **Points** page. On-chain they live in **SC3 LoyaltyLevelVault** as two different mappings. Amounts are credited when users mint cards or when their referral network mints. The frontend and backend read them from the contract (or from a synced DB cache).
 
 ---
 
-## How loyalty points are earned
+## Terminology (contract vs Points page)
 
-**Minting a CLC1 card (paid mint)**  
-When you mint a card with USDT (Bronze, Platinum, Emerald, or Diamond), the CustomNFT (Master) contract calls SC3 and credits **loyalty points** (card points) to your wallet. Amount depends on tier:
+| On-chain (SC3) | Points page label | What users see |
+|----------------|-------------------|----------------|
+| **`loyaltyPoints(user)`** | **CARD POINT** | **Card Points** — points **you** earn from your own CLC1 activity (paid mints + gift CLC1 cap). |
+| **`levelPoints(user)`** | **LOYALTY POINTS** | **Loyalty Points** — points **you** earn from your **referral downline** (their paid CLC1 mints + gift CLC1 cap upline). |
 
-| Tier    | Loyalty points per mint |
-|---------|--------------------------|
-| Bronze  | 10                       |
-| Platinum| 100                      |
-| Emerald | 500                      |
-| Diamond | 1,000                    |
+Elsewhere in code or older notes, **`loyaltyPoints`** are sometimes called “loyalty” in the Solidity sense; in the **product UI** that same balance is **Card Points**. Similarly, **`levelPoints`** on-chain are labeled **LOYALTY POINTS** on the Points page (not to be confused with the contract name `loyaltyPoints`).
 
-**CLC2 cards do not give card points.** When your CLC1 reaches cap and a CLC2 card is auto-generated for you, the contract does **not** credit any loyalty/card points. Card point is from CLC1 mints only.
-
-**Summary:** You get loyalty (card) points on **paid CLC1 mints** and when your **gift CLC1** reaches **cap**. CLC2 generation does not add points.
+**Total points** (third box on the Points page) = Card Points + Loyalty Points = `loyaltyPoints + levelPoints`.
 
 ---
 
-## How level points are earned
+## Two types (summary)
 
-Level points go to the **referral chain**: the person who referred the minter, and that referrer’s referrer, and so on, up to **5 levels**.
+| Type (app name) | Who gets them | How they are earned |
+|-----------------|----------------|----------------------|
+| **Card Points** (`loyaltyPoints`) | The **minter** / **gift card owner** | Paid CLC1 mints; **gift CLC1** +1,000 when CLC1 hits **cap** (see Gift section). CLC2 does not add. |
+| **Loyalty Points** (`levelPoints`) | **Referrers** in the chain (up to 5) | When someone you referred **mints paid CLC1**, or when a referred **gift card user’s CLC1 hits cap** (Diamond-equivalent upline credits). |
 
-- When a user mints a **CLC1 card** with a **referrer** set (e.g. they used a link like `?ref=0x...`), the contract credits **level points** to:
-  - the **direct referrer** (the `ref` address),
-  - then that referrer’s referrer,
-  - then the next referrer up the chain,
-  - up to **5 referrers** in total.
+---
 
-- The **amount per referrer** is the same as the tier’s “level” amount (not the loyalty amount). In the contract these are:
+## How Card Points are earned (`loyaltyPoints`)
 
-  | Tier    | Level points (per referrer in chain) |
-  |---------|--------------------------------------|
-  | Bronze  | 8   |
-  | Platinum| 80  |
-  | Emerald | 400 |
-  | Diamond | 800 |
+**Paid CLC1 mint**  
+When you mint with USDT (Bronze, Platinum, Emerald, or Diamond), the Master contract sends the SC3 USDT share and credits **`loyaltyPoints`** to your wallet — shown in the app as **Card Points**:
 
-- **Paid CLC1 mints** trigger level points (tier table above). **Gift CLC1 cap** triggers **Diamond** amounts (800 per upline) when SC3 receives the gift’s $126 share. CLC2 auto-mints do **not** credit level points to anyone.
+| Tier     | Card Points per mint (`loyaltyPoints` delta) |
+|----------|-----------------------------------------------|
+| Bronze   | 10                                            |
+| Platinum | 100                                           |
+| Emerald  | 500                                           |
+| Diamond  | 1,000                                         |
 
-**Summary:** You get level points when **someone you referred** **mints paid CLC1** or when a referred user’s **gift CLC1 reaches cap**. You can receive level points from many referrals; they add up. The chain is: minter → direct referrer → referrer’s referrer → … (max 5).
+**CLC2 does not add Card Points.** When your CLC1 reaches cap and CLC2 is auto-minted, the contract does **not** credit `loyaltyPoints` for that.
+
+**Summary:** **Card Points** increase on **paid CLC1 mints** and when your **gift CLC1** reaches **cap**. CLC2 generation does not add Card Points.
+
+---
+
+## How Loyalty Points are earned (`levelPoints`)
+
+**Loyalty Points** (`levelPoints`) go to the **referral upline**: the person who referred the minter, then that person’s referrer, up to **5** addresses.
+
+- When a user mints **CLC1** with a **referrer** (e.g. `?ref=0x...`), the contract credits **`levelPoints`** to:
+  - the **direct referrer**,
+  - then each referrer up the chain,
+  - up to **5** wallets in total.
+
+- **Amount per upline wallet** follows the **minted card tier** (not the “Card Points” table):
+
+  | Tier     | Loyalty Points per upline wallet (`levelPoints` delta) |
+  |----------|----------------------------------------------------------|
+  | Bronze   | 8                                                        |
+  | Platinum | 80                                                       |
+  | Emerald  | 400                                                      |
+  | Diamond  | 800                                                      |
+
+- **Paid CLC1 mints** trigger these credits (tier table above). **Gift CLC1 cap** triggers **Diamond** amounts (**800** per upline) when SC3 receives the gift’s **$126** share. CLC2 auto-mints do **not** credit `levelPoints`.
+
+**Summary:** **Loyalty Points** grow when **someone you referred** **mints paid CLC1** or when a referred user’s **gift CLC1 reaches cap**. They add up across many referrals. Chain: minter → direct referrer → … (max 5).
 
 ---
 
 ## Gift card (CLC1 / CLC2)
 
-Gift cards are **CLC1** NFTs minted via `safeMintGift` ($0 to the recipient at mint). For **Cards Cashback**, a gift card user is treated like **Diamond (Condition D)** on-chain.
+Gift cards are **CLC1** NFTs from `safeMintGift` / `safeMintGift(to, referrer)` ($0 at mint). For **Cards Cashback**, a gift user is treated like **Diamond (Condition D)** on-chain.
 
-**Loyalty (“card”) points**
+If the recipient may **never** pay-mint, admin should call **`safeMintGift(to, referrer)`** with their real upline so `referredBy[recipient]` exists; otherwise when only their **downline** mints, **Loyalty Points** stop at the recipient and the recipient’s referrer gets nothing.
 
-- There is **no** SC3 USDT (and **no** loyalty points credit) at the moment the gift is minted.
-- When the **gift CLC1** card reaches its **$2500 cap**, the contract sends **$126** to SC3 (same economic role as the Diamond tier’s loyalty/level USDT share on a paid mint). At that moment the contract credits **loyalty points to the gift card owner** using the **Diamond** amounts: **+1,000** loyalty points (same as a Diamond CLC1 mint).
-- **Gift CLC2** generation and cap payouts do **not** add further loyalty points (aligned with “CLC2 does not give card points” for paid tiers).
+**Card Points (`loyaltyPoints`)**
 
-**Level points**
+- No SC3 credit at **gift mint** time.
+- When **gift CLC1** hits **$2500 cap**, **$126** goes to SC3; the contract credits **+1,000** to **`loyaltyPoints`** for the gift owner (**Card Points**, same as Diamond CLC1 mint).
+- **Gift CLC2** does not add further **`loyaltyPoints`**.
 
-- When the gift CLC1 hits cap and **$126** is sent to SC3, the contract credits **level points** to the gift owner’s **referral upline** (up to **5** addresses), using the **Diamond** per-referrer amount: **800** level points each — same as when a referred user mints a **Diamond** CLC1 card.
-- The upline is read from `referredBy[giftOwner]` (set on the gift owner’s **first paid mint** with a referrer, same as other users). If the gift owner has no referrer recorded, only loyalty is credited at cap; no level points are distributed.
+**Loyalty Points (`levelPoints`)**
 
-**Summary for gift:** Points behave like a **Diamond CLC1 mint** for SC3, but **only when the gift CLC1 reaches cap**, not at gift mint time.
+- At that same gift CLC1 cap event, **`levelPoints`** are credited to the gift owner’s **upline** (up to **5**), **800** each (Diamond-equivalent).
+- Upline comes from `referredBy[giftOwner]` (set on first **paid** mint with a referrer). If none, only **`loyaltyPoints`** are credited at cap; no **`levelPoints`**.
 
----
-
-## Where points are stored and how the app shows them
-
-- **On-chain:** SC3 (LoyaltyLevelVault) holds `loyaltyPoints(user)` and `levelPoints(user)`.
-- **Backend:** The `loyalty_points` table is a cache; it can be filled by syncing from chain (e.g. `npm run sync:all` or loyalty sync script).
-- **Frontend:** When the user’s wallet is connected, the app reads **loyalty** and **level** points from the SC3 contract. If the contract is not available, it can fall back to the backend API (which uses the cached DB or can fetch from chain).
-
-So: **loyalty points** come from **paid CLC1 mints** and from **gift CLC1 reaching cap**; **level points** come from **downline paid CLC1 mints** and from a referred user’s **gift CLC1 cap** (upline). CLC2 generation does not add loyalty points. All crediting is done by the Master contract calling SC3; no separate “claim” step is needed for points to appear.
+**Summary for gift:** For SC3, behaves like a **Diamond CLC1 mint** at **gift CLC1 cap only**, not at gift mint time.
 
 ---
 
-## Points page: CARD POINT vs LOYALTY POINTS
+## Where values are stored
 
-On the **Points** page, the three boxes mean:
+- **On-chain:** SC3 stores `loyaltyPoints` and `levelPoints` (see terminology table above for app labels).
+- **Backend:** Table `loyalty_points` caches `loyalty_points` and `level_points` columns (same split as chain).
+- **Frontend:** Reads SC3 (or API fallback).
 
-| Page label        | Source (contract / context) | Meaning |
-|-------------------|-----------------------------|--------|
-| **CARD POINT**    | `loyaltyPoints(account)` from SC3 | Loyalty points: earned by **you** when **you** mint paid CLC1 cards; **gift CLC1** adds the same when your gift CLC1 hits **cap** (+1,000 like Diamond). CLC2 does not add. |
-| **LOYALTY POINTS**| `levelPoints(account)` from SC3 | Level points: earned when **your downline** mints paid CLC1 cards, and when a **gift card user you referred** hits **gift CLC1 cap** (Diamond-equivalent upline credits). |
-| **TOTAL POINTS**  | `loyaltyPoints + levelPoints` | Sum of the two; used for reward achievements. |
+**Card Points** come from **paid CLC1 mints** and **gift CLC1 cap**. **Loyalty Points** come from **downline paid CLC1** and **referred user’s gift CLC1 cap**. CLC2 does not add **Card Points**. Master calls SC3 `creditPoints`; no separate user “claim” for these two balances.
 
-**How CARD POINT is calculated:** It is **not** calculated on the Points page. It is **read from the chain** — SC3 LoyaltyLevelVault's `loyaltyPoints(user)`. The contract credits it on **paid CLC1 mints** and when a **gift CLC1** reaches **cap**; CLC2 generation does not add card points.
+---
 
-**Formula for CARD POINT (loyalty points):**
+## Points page: the three boxes
 
-- **Card point** = sum of loyalty credits from **paid CLC1 mints** plus **gift CLC1 cap** (+1,000 once).
-- Each **paid CLC1 mint by you**: +10 (Bronze), +100 (Platinum), +500 (Emerald), or +1,000 (Diamond).
-- **Gift CLC1** reaches **cap**: +1,000 (same as Diamond) when SC3 receives the $126 share.
-- **CLC2 auto-generated for you**: no points (not counted for card point).
+| Page label | On-chain source | Meaning |
+|------------|-----------------|--------|
+| **CARD POINT** | `loyaltyPoints(account)` | **Card Points** — your CLC1 mints (paid tiers) + gift CLC1 cap (+1,000). Not CLC2. |
+| **LOYALTY POINTS** | `levelPoints(account)` | **Loyalty Points** — your referral upline rewards from others’ paid CLC1 mints + referred users’ gift CLC1 cap (800 per upline tier Diamond-equivalent). |
+| **TOTAL POINTS** | `loyaltyPoints + levelPoints` | Sum; used for achievements / raffle logic. |
 
-Example: you mint 1 Platinum CLC1 (+100) and later your CLC2 is auto-minted → your **CARD POINT** stays 100 (CLC2 does not add points).
+**How CARD POINT is calculated:** Not computed in the UI; it is **`loyaltyPoints(user)`** from SC3. Credited on **paid CLC1 mints** and at **gift CLC1 cap**; CLC2 does not add.
+
+**Formula for CARD POINT (`loyaltyPoints`):**
+
+- Sum of **`loyaltyPoints`** credits: each **paid CLC1 mint by you** (+10 / +100 / +500 / +1,000 by tier) plus **gift CLC1 cap** (+1,000 once when $126 hits SC3).
+- **CLC2** auto-mint: no **`loyaltyPoints`**.
+
+Example: you mint 1 Platinum CLC1 (+100 **Card Points**) and later CLC2 is created → **CARD POINT** stays 100.
