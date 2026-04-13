@@ -85,8 +85,10 @@ The **Gift Card SC** holds the USDT it receives. It sends **$2000** to the gift 
 
 | Condition | Description |
 |-----------|-------------|
-| **Condition 1** | **Loyalty users minted 10 Diamond cards** — Users who have the gift card user as **referrer** have minted **10 Diamond cards in total** (counted off-chain; admin verifies). |
+| **Condition 1** | **Loyalty users minted 3 Diamond cards** — Users who have the gift card user as **referrer** have minted **3 Diamond (CLC1) cards in total** (counted off-chain; admin verifies). Matches the current spec documented in `SC/contracts/GiftCardReceiver.sol`. |
 | **Condition 2** | **Gift CLC2 cap reached** — The gift card user’s gift CLC2 card has reached its max cap. The Master contract has called `onGiftCLC2CapReached(beneficiary)` so the Gift Card SC has recorded this. |
+
+**On-chain vs off-chain:** `GiftCardReceiver.payoutBothConditionsMet` **only** checks condition 2 (`giftClc2CapReached`), no double-pay flags, and balance. **Condition 1 is not enforced by the contract** — the owner must verify it (e.g. admin dashboard: Diamond mint count by referrals) before calling.
 
 **How it’s triggered:** An admin calls the Gift Card SC function **`payoutBothConditionsMet(giftCardUser)`** after verifying condition 1 (e.g. via admin dashboard “Diamond mints by loyalty users”). The contract checks that condition 2 is recorded and that this user has not already been paid, then sends **$2000 USDT** to `giftCardUser`.
 
@@ -94,7 +96,7 @@ The **Gift Card SC** holds the USDT it receives. It sends **$2000** to the gift 
 
 ### 1.8 Admin flow summary
 
-1. **Send gift card** — Admin uses the Gift Card admin page to send a gift card to an eligible wallet (never minted). Contract: `mintGiftCard(to)`.
+1. **Send gift card** — Admin uses the Gift Card admin page to send a gift card to an eligible wallet (never minted). Contract: **`safeMintGift(to)`** or **`safeMintGift(to, referrer)`** on CustomNFT (Master / authorized gift minter).
 2. **Track progress** — Admin can see gift card users, whether gift CLC2 cap is reached, and how many Diamond cards were minted by users who have the gift card user as referrer.
 3. **Payout $2000** — When both conditions are met, admin calls `payoutBothConditionsMet(giftCardUser)` on the Gift Card SC contract (e.g. from the same admin page or via contract interaction).
 
@@ -165,7 +167,7 @@ The backend never deletes coupons when points drop; it only **adds** coupons whe
 |----------------|-----------|----------------|
 | **Who**        | Admin sends to wallet that never minted | Any user with 1000+ total points (Card + Level) |
 | **On-chain**  | Yes (CustomNFT + GiftCardReceiver) | No (backend only) |
-| **Reward**     | $2000 USDT when both conditions met (10 Diamond by referrals + gift CLC2 cap) | 1 coupon per 1000 points; serial = wallet |
+| **Reward**     | $2000 USDT when both conditions met (3 Diamond by referrals + gift CLC2 cap) | 1 coupon per 1000 points; serial = wallet |
 | **Trigger**    | Admin sends card; admin calls payout when both conditions met | Backend creates coupons when loyalty is synced/upserted |
 
 For full cash flow of the gift card (CLC1/CLC2 caps, SC3, SC1), see [MAIN_FLOW_AND_CASHFLOW.md](MAIN_FLOW_AND_CASHFLOW.md) §2.5 and [SMART_CONTRACTS_AND_PAYMENTS.md](SMART_CONTRACTS_AND_PAYMENTS.md) (Gift Card SC).

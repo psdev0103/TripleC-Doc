@@ -83,7 +83,7 @@ Quick reference for all contract and frontend functions.
 | Function | Type | Description |
 |----------|------|-------------|
 | `onGiftCLC2CapReached(beneficiary)` | external | Only Master. Records that this user’s gift CLC2 card reached cap (condition 2). |
-| `payoutBothConditionsMet(giftCardUser)` | external | Owner only. Sends $2000 USDT to `giftCardUser` when condition 2 is set and not yet paid; admin must verify condition 1 (10 Diamond by referrals) off-chain. |
+| `payoutBothConditionsMet(giftCardUser)` | external | Owner only. Sends $2000 USDT to `giftCardUser` when condition 2 is set and not yet paid; admin must verify condition 1 (**3** Diamond mints by users who have `giftCardUser` as referrer) off-chain (per `GiftCardReceiver.sol`). |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
 | `setPaymentToken(token)` | external, owner | Set USDT token address. |
 | `withdrawToken(token, to, amount)` | external, owner | Withdraw ERC20 to `to`. |

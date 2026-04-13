@@ -207,6 +207,8 @@ Gift cards are **not paid by the user**. An admin sends a gift card to a wallet 
 | **Gift CLC2 generated** | — | $0.50 | $500 (+ queue remainder) | SC2 $274.5, SC1b $225 |
 | **Gift CLC2 cap** | $1000 | — | — | — |
 
+**$2000 user payout (Gift Card SC):** Once **both** are satisfied — (1) users who have the gift card owner as **referrer** have minted **3 Diamond** cards in total (verified off-chain), and (2) gift **CLC2** cap was reached (recorded on-chain via `onGiftCLC2CapReached`) — an admin calls `payoutBothConditionsMet`. Details: [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.7.
+
 ---
 
 ## Part 3 — Summary tables

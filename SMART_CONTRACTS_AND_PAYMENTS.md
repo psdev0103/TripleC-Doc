@@ -32,7 +32,7 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 
 $2000 is sent to the gift card user when **both** conditions are met (once per user):
 
-1. **Loyalty users minted 10 Diamond cards** — Users who have the gift card user as referrer have minted 10 Diamond cards in total (verified off-chain by admin).
+1. **Loyalty users minted 3 Diamond cards** — Users who have the gift card user as referrer have minted 3 Diamond (CLC1) cards in total (verified off-chain by admin; see `GiftCardReceiver.sol` NatSpec).
 2. **Gift CLC2 card reached max cap** — The user’s gift CLC2 card has reached its max cap (Master calls `onGiftCLC2CapReached(beneficiary)` to record this).
 
 When both are true, an admin calls `payoutBothConditionsMet(giftCardUser)` to send **$2000 USDT** to that user.
@@ -188,4 +188,4 @@ If SC5 is not set, Master sends the 5% CLC share to SC2 (DeveloperReceiver) inst
 | SC3 | Every paid mint (Loyalty & Level); plus when CLC2 is generated (5% of queue). |
 | SC4 | Every paid mint (full referral amount); then pays referrer + SC5 when applicable. |
 | SC5 | When Master pays a card owner at cap (5% of payout); when SC4 pays a referrer (5% of cashback). |
-| Gift Card SC | Receives: CLC1 cap $1000, CLC2 cap $1000. Sends: $2000 to gift card user when both conditions met (10 Diamond by referrals + gift CLC2 cap reached; admin trigger). |
+| Gift Card SC | Receives: CLC1 cap $1000, CLC2 cap $1000. Sends: $2000 to gift card user when both conditions met (3 Diamond by referrals + gift CLC2 cap reached; condition 2 on-chain, condition 1 verified off-chain before `payoutBothConditionsMet`). |
