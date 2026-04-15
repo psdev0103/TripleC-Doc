@@ -10,7 +10,27 @@ If the referrer **owns no NFT** at settlement, the **full** condition-based amou
 
 **Important:** Condition (1–4) is always the **referrer’s** qualification.
 
-**Implementation note:** Master applies cashback across at most **200** of the referrer’s lowest `tokenId` cards per call (gas bound). Any portion not applied to `rewardBalance` in that pass remains in Master’s **contract reserve**.
+**Implementation note:** Master applies cashback across at most **200** of the referrer’s lowest `tokenId` cards per call (gas bound). Any portion not applied in that pass is either sent to **SC1 overlap** (`overlapReceiver`) or, if overlap is unset, left in Master’s **contract reserve** (see §1.0).
+
+### 1.0 Queue routing (CLC1 → virtual CLC2 → CLC2 token → overlap)
+
+Cards Cashback is applied in **ascending `tokenId`** order for the referrer’s wallet.
+
+1. **CLC1 — first wallet tranche**  
+   Cashback uses the same mechanics as mint-driven rewards: accrual to `rewardBalance` and incremental **95% / 5%** payouts until **`withdrawAmount`** (first tranche) for that CLC1 card is satisfied.
+
+2. **CLC1 — paired CLC2 not minted yet**  
+   Once that CLC1’s **first tranche** is fully paid out, further cashback does **not** fill the remainder of CLC1’s bucket toward CLC2 funding. Instead it:
+   - Pays **95% / 5%** toward the **paired CLC2 card’s first tranche** (`withdrawAmountCLC2`) **even if the CLC2 NFT does not exist yet** (“virtual” CLC2 payout on-chain: gross amount is tracked on the **CLC1** `tokenId` and reduces the future CLC2 card’s obligation).
+   - **Reduces** the paired card’s **`rewardCapCLC2`** by the same absorbed amounts (first tranche via payouts; any further absorption up to `rewardCapCLC2` can reduce the cap **without** additional wallet payout until the CLC2 token is minted).
+
+3. **CLC2 token (after auto-mint)**  
+   When the CLC2 card exists, cashback only applies until its **first wallet tranche** (`withdrawAmountCLC2`) is satisfied (using the reduced cap and any prepaid `amountPaidOutToWallet` seeded at mint).
+
+4. **All first tranches satisfied**  
+   If **every** token in the processed queue has **no remaining “first tranche” capacity** for cashback (CLC1 first tranche done, virtual + minted CLC2 first tranche done, and CLC2 cap fully absorbed where applicable), **any leftover** cashback USDT for that settlement is transferred to **SC1 overlap** (`overlapReceiver`). If overlap is not configured, that remainder stays in Master’s reserve.
+
+**Gift-tier** cards do not use the virtual CLC2 path; cashback follows the existing Gift reward rules only.
 
 ---
 
@@ -79,7 +99,7 @@ All amounts below are **total cashback per referred mint** (USDT)—the value pa
 
 ## 4. Implementation notes
 
-- **CustomNFT:** `getReferrerCashbackLevel`, `_getReferralAmountCashback`; `referrerHasCashbackEligibleCards`; `creditReferralCashbackFromSc4` (SC4-only).
+- **CustomNFT:** `getReferrerCashbackLevel`, `_getReferralAmountCashback`; `referrerHasCashbackEligibleCards`; `creditReferralCashbackFromSc4` (SC4-only). Storage: `clc1ParentOfClc2`, `clc2TokenOfClc1`, `referralCashbackClc2WalletPrepaid`, `referralCashbackClc2CapReduction`; event `ReferralCashbackVirtualClc2Payout`. `_getRewardCap` for CLC2 subtracts `referralCashbackClc2CapReduction[parentCLC1]`.
 - **ReferralFeeHandler (SC4):** `processReferralPayment` — full `totalAmount` to Master + credit, or retained in SC4; **no** SC5 split on this path. Events: `ReferralCashbackCredited`, `ReferralCashbackRetainedInSC4`, `ReferrerPayoutSkipped`.
 - **Backend:** `record` stores the **full** condition-based amount (wei), aligned with on-chain settlement.
 - **Frontend:** Copy should describe **full cashback to card queue** (and SC4 retention when the referrer had no NFT), not a 95%/5% split on cashback.
