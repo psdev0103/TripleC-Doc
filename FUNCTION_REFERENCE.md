@@ -17,7 +17,8 @@ Quick reference for all contract and frontend functions.
 | `withdrawRewards(tokenId)` | external | Withdraw CLC reward to wallet. Owner only; requires `rewardComplete`. CLC2: after withdraw, card is dismissed. |
 | `claimCLC2(tokenId)` | external | Owner only. Mint deferred CLC2 card when reserve was insufficient at completion (batch mint). |
 | `getReferrerCashbackLevel(referrer)` | view | Returns referrer's Cards Cashback qualification level (1–4). Condition 2 = has Platinum + Bronze CLC2 done; 3 = Emerald + Bronze & Platinum CLC2 done; 4 = Diamond + all lower CLC2 done. |
-| `creditReferralToReferrerQueue(referrer, amount)` | external | Only SC4. Pulls USDT from SC4 and accrues `amount` onto the referrer’s CLC1/CLC2 cards (queue order by `tokenId`). |
+| `creditReferralCashbackFromSc4(referrer, amount)` | external | Only SC4. After SC4 transfers `amount` USDT to Master, applies Cards Cashback to the referrer’s CLC1/CLC2 queue (ascending `tokenId`). |
+| `giftClc1ReferralMainFlowUnlocked(tokenId)` | view | **Gift CLC1:** `true` after the **3** referred-Diamond loyalty milestone; then cashback uses Diamond wallet / virtual-CLC2 routing. |
 | `totalSupply()` | view | Number of tokens minted. |
 | `tierOf(tokenId)` | view | Tier (0–3) of the card. |
 | `rewardBalance(tokenId)` | view | Current reward balance (USDT) on the card. |
@@ -72,7 +73,7 @@ Quick reference for all contract and frontend functions.
 
 | Function | Type | Description |
 |----------|------|-------------|
-| `processReferralPayment(referrer, totalAmount, referrerHasQueueCards)` | external | Only Master. Master passes whether the referrer has any CLC1 or CLC2 card. Splits 5% to SC5 (or SC2 if SC5 unset); 95% pulled onto referrer’s CLC1/CLC2 queue when true, else left in SC4. |
+| `processReferralPayment(referrer, totalAmount)` | external | Only Master. Called after Master sends the tier’s referral USDT to SC4; SC4 forwards `totalAmount` to Master and Master runs `creditReferralCashbackFromSc4` for the referrer’s queue (see [CARDS_CASHBACK_SPEC.md](CARDS_CASHBACK_SPEC.md)). |
 | `withdrawToken(to, amount)` | external, owner | Withdraw any USDT held in SC4 (e.g. when no referrer was set) to `to`. |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
 
@@ -83,7 +84,7 @@ Quick reference for all contract and frontend functions.
 | Function | Type | Description |
 |----------|------|-------------|
 | `onGiftCLC2CapReached(beneficiary)` | external | Only Master. Records that this user’s gift CLC2 card reached cap (condition 2). |
-| `payoutBothConditionsMet(giftCardUser)` | external | Owner only. Sends $2000 USDT to `giftCardUser` when condition 2 is set and not yet paid; admin must verify condition 1 (**3** Diamond mints by users who have `giftCardUser` as referrer) off-chain (per `GiftCardReceiver.sol`). |
+| `payoutBothConditionsMet(giftCardUser)` | external | Owner only. Sends $2000 USDT to `giftCardUser` when condition 2 is set and not yet paid; admin must verify condition 1 (**3** Diamond mints; align with Master milestone / `GiftLoyaltyThreeDiamonds` — not enforced in this contract). |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
 | `setPaymentToken(token)` | external, owner | Set USDT token address. |
 | `withdrawToken(token, to, amount)` | external, owner | Withdraw ERC20 to `to`. |

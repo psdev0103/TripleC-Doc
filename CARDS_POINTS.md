@@ -70,14 +70,15 @@ When you mint with USDT (Bronze, Platinum, Emerald, or Diamond), the Master cont
 
 ## Gift card (CLC1 / CLC2)
 
-Gift cards are **CLC1** NFTs from `safeMintGift` / `safeMintGift(to, referrer)` ($0 at mint). For **Cards Cashback**, a gift user is treated like **Diamond (Condition D)** on-chain.
+Gift cards are **CLC1** NFTs from `safeMintGift` / `safeMintGift(to, referrer)` ($0 at mint). For **Cards Cashback amounts**, a gift user is treated like **Diamond (Condition D)**; **routing** (wallet vs accrue-only) follows [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.4 until **3** referred Diamonds unlock main flow.
 
 If the recipient may **never** pay-mint, admin should call **`safeMintGift(to, referrer)`** with their real upline so `referredBy[recipient]` exists; otherwise when only their **downline** mints, **Loyalty Points** stop at the recipient and the recipient’s referrer gets nothing.
 
 **Card Points (`loyaltyPoints`)**
 
 - No SC3 credit at **gift mint** time.
-- When **gift CLC1** hits **$2500 cap**, **$126** goes to SC3; the contract credits **+1,000** to **`loyaltyPoints`** for the gift owner (**Card Points**, same as Diamond CLC1 mint).
+- The **$300** loyalty milestone (3 referred Diamonds) updates **`rewardBalance`** on Master only; it does **not** credit SC3 points by itself.
+- When **gift CLC1** hits its **effective CLC1 cap** (nominal **$2500**, or **$2200** after the **$300** cap reduction), **$126** goes to SC3; the contract credits **+1,000** to **`loyaltyPoints`** for the gift owner (**Card Points**, same as Diamond CLC1 mint).
 - **Gift CLC2** does not add further **`loyaltyPoints`**.
 
 **Loyalty Points (`levelPoints`)**

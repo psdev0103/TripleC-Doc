@@ -19,20 +19,26 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 
 ---
 
+## CustomNFT — gift loyalty milestone (no new SC)
+
+**Role:** When **3** referred **Diamond** CLC1 mints complete for a gift-card owner’s upline, Master moves **$300** from **`contractReserve`** to that owner’s Gift CLC1 **`rewardBalance`** (USDT remains on Master until normal withdraw rules apply), reduces the token’s **effective** CLC1 cap by **$300**, and unlocks **Diamond-like** Cards Cashback routing. See [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.4.
+
+---
+
 ## Gift Card SC — GiftCardReceiver
 
-**Role:** Receives USDT when a **gift card** reaches CLC1 cap or CLC2 cap. No user payout for gift cards; those amounts go to this contract instead.
+**Role:** Receives USDT when a **gift card** reaches CLC1 cap or CLC2 cap. No user payout for gift cards at those cap events; those amounts go to this contract instead.
 
 **When Gift Card SC receives payment:**
 
-1. **Gift CLC1 cap reached** — **$1000** (when the gift card’s reward balance reaches the CLC1 cap of $2500). At the same time, Master sends $126 to SC3, $374 to SC1, and uses $1000 to auto-mint the gift CLC2 card.
+1. **Gift CLC1 cap reached** — **$1000** (when the gift card’s **`rewardBalance` reaches its effective CLC1 cap** — nominal **$2500** minus **$300** if the loyalty milestone already ran). At the same time, Master sends $126 to SC3, $374 to SC1, and uses $1000 to auto-mint the gift CLC2 card.
 2. **Gift CLC2 cap reached** — **$1000** (when the gift CLC2 card’s reward balance reaches the CLC2 cap of $1000). No payout to the user.
 
 **When Gift Card SC sends $2000:**
 
 $2000 is sent to the gift card user when **both** conditions are met (once per user):
 
-1. **Loyalty users minted 3 Diamond cards** — Users who have the gift card user as referrer have minted 3 Diamond (CLC1) cards in total (verified off-chain by admin; see `GiftCardReceiver.sol` NatSpec).
+1. **Loyalty users minted 3 Diamond cards** — Same rule as Master’s loyalty milestone; **CustomNFT** tracks it on-chain and emits **`GiftLoyaltyThreeDiamonds`**. **GiftCardReceiver** does not re-check this; admin should align with chain before `payoutBothConditionsMet` (see `GiftCardReceiver.sol` NatSpec).
 2. **Gift CLC2 card reached max cap** — The user’s gift CLC2 card has reached its max cap (Master calls `onGiftCLC2CapReached(beneficiary)` to record this).
 
 When both are true, an admin calls `payoutBothConditionsMet(giftCardUser)` to send **$2000 USDT** to that user.
@@ -188,4 +194,4 @@ If SC5 is not set, Master sends the 5% CLC share to SC2 (DeveloperReceiver) inst
 | SC3 | Every paid mint (Loyalty & Level); plus when CLC2 is generated (5% of queue). |
 | SC4 | Every paid mint (full referral amount); then pays referrer + SC5 when applicable. |
 | SC5 | When Master pays a card owner at cap (5% of payout); when SC4 pays a referrer (5% of cashback). |
-| Gift Card SC | Receives: CLC1 cap $1000, CLC2 cap $1000. Sends: $2000 to gift card user when both conditions met (3 Diamond by referrals + gift CLC2 cap reached; condition 2 on-chain, condition 1 verified off-chain before `payoutBothConditionsMet`). |
+| Gift Card SC | Receives: CLC1 cap $1000, CLC2 cap $1000. Sends: $2000 to gift card user when both conditions met (3 Diamond by referrals + gift CLC2 cap; condition 2 on-chain; condition 1 should match Master milestone / events before `payoutBothConditionsMet`). |
