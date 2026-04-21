@@ -21,7 +21,7 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 
 ## CustomNFT — gift referrer Diamond counter (no new SC)
 
-**Role:** **Queue** and **Cards Cashback** accrue on Gift CLC1 like **Diamond CLC1** from the start. **`referralDiamondMintCountForUpline(giftOwner)`** counts paid **Diamond CLC1** mints by users whose on-chain referrer is **`giftOwner`** (capped at **3**) and is used by **GiftCardReceiver** to enforce the **$1000 + $1000** user payouts. See [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md).
+**Role:** **Queue** and **Cards Cashback** fill Gift CLC1 up to a **$2000** cap (no CLC1 wallet tranche; cashback accrues to **`rewardBalance`**). **`referralDiamondMintCountForUpline(giftOwner)`** counts paid **Diamond CLC1** mints by users whose on-chain referrer is **`giftOwner`** (capped at **3**) and is used by **GiftCardReceiver** to enforce the **$1000 + $1000** user payouts. See [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md).
 
 **On-chain reads (admin / indexers):** `referralDiamondMintCountForUpline(giftOwner)`; at count **3**, **`GiftReferralDiamondCountReached`**. Legacy views **`giftLoyaltyMilestoneApplied`** / **`giftClc1LoyaltyCapReductionWei`** are deprecated (milestone removed).
 
@@ -33,7 +33,7 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 
 **When Gift Card SC receives payment:**
 
-1. **Gift CLC1 cap reached** — **$1000** (when the gift card’s **`rewardBalance` reaches the CLC1 reward cap**, nominal **$2500** in default config). At the same time, Master sends $126 to SC3, $374 to SC1, uses $1000 to auto-mint the gift CLC2 card, and calls **`onGiftCLC1CapReached(beneficiary)`**.
+1. **Gift CLC1 cap reached** — **$1000** (when the gift card’s **`rewardBalance` reaches the CLC1 reward cap**, nominal **$2000** in default config). Master sends **$1000** to Gift Card SC, uses **$1000** from reserve (and **$1000** from the card’s balance) to auto-mint gift CLC2, and calls **`onGiftCLC1CapReached(beneficiary)`**. There is **no** **$126** / **$374** SC3 / SC1 leg at this finalize.
 2. **Gift CLC2 cap reached** — **$1000** (when the gift CLC2 card’s reward balance reaches the CLC2 cap of $1000). Master calls **`onGiftCLC2CapReached(beneficiary)`**. No user payout at finalize.
 
 **When Gift Card SC sends $1000 + $1000 to the user:**

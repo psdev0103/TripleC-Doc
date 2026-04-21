@@ -30,7 +30,7 @@ Cards Cashback is applied in **ascending `tokenId`** order for the referrer’s 
 4. **All first tranches satisfied**  
    If **every** token in the processed queue has **no remaining “first tranche” capacity** for cashback (CLC1 first tranche done, virtual + minted CLC2 first tranche done, and CLC2 cap fully absorbed where applicable), **any leftover** cashback USDT for that settlement is transferred to **SC1 overlap** (`overlapReceiver`). If overlap is not configured, that remainder stays in Master’s reserve.
 
-**Gift-tier CLC1:** Same routing as **Diamond CLC1** in §1.0 (first tranche, virtual CLC2 on the paired CLC1 `tokenId`, minted CLC2, overlap). The on-chain view **`giftClc1ReferralMainFlowUnlocked(tokenId)`** is **always true** for Gift CLC1 in current logic (legacy name). See [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md).
+**Gift-tier CLC1:** **Cards Cashback** is applied entirely through **`rewardBalance`** accrual on the Gift CLC1 token (no CLC1 wallet tranche; **`withdrawAmount` = 0**). The contract does **not** route Gift CLC1 cashback into the virtual-CLC2 path before CLC2 is minted, so the **$2000** CLC1 cap can be reached from queue + cashback like a single bucket. **Gift CLC2** follows §1.0 like other CLC2 cards. See [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md).
 
 ---
 

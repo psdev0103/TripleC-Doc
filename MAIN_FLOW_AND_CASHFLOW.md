@@ -184,7 +184,7 @@ For each tier, cashflow is split into **CLC1** (when the user mints a paid card)
 
 ### 2.5 Gift card — $0 (admin only; recipient must have never minted)
 
-Gift cards are **not paid by the user**. An admin sends a gift card to a wallet that has **never minted any card** (contract enforces `balanceOf(to) == 0`). The gift card uses the same queue flow as other cards (receives from later mints); when caps are reached, payouts go to **Gift Card SC**, **SC3**, and **SC1** instead of the user.
+Gift cards are **not paid by the user**. An admin sends a gift card to a wallet that has **never minted any card** (contract enforces `balanceOf(to) == 0`). The gift card uses the same queue flow as other cards (receives from later mints); at **CLC1 cap ($2000)** finalize, **$1000** goes to **Gift Card SC** and **$1000** funds **CLC2** mint (no **$126** / **$374** SC3/SC1 slice at that step).
 
 **Eligibility:** Only wallets with **zero** cards can receive a gift card. The admin page checks eligibility and the contract reverts if the recipient already owns any card.
 
@@ -192,20 +192,18 @@ Gift cards are **not paid by the user**. An admin sends a gift card to a wallet 
 
 **Three referred Diamonds (Master, on-chain):** Each paid **Diamond CLC1** mint by a user whose on-chain referrer is the **gift card owner** increments **`referralDiamondMintCountForUpline[giftOwner]`** up to **3**. This counter **only** gates **Gift Card SC** user payouts ([GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.8). At **3**, Master emits **`GiftReferralDiamondCountReached`**.
 
-**CLC1 ($0 user payment; CLC1 reward cap $2500** nominal in default tier config):**
+**CLC1 ($0 user payment; CLC1 reward cap $2000** nominal in default tier config; no CLC1 wallet tranche):**
 
 | When CLC1 cap is reached | Destination | Amount (USDT) |
 |--------------------------|-------------|---------------|
-| Gift Card SC             | $1000       | |
-| SC3 Loyalty (POINTS)     | $126        | |
-| SC1 Overlap              | $374        | |
-| CLC2 mint                | $1000       | (auto-mint CLC2 card for same owner) |
+| Gift Card SC             | $1000       | from `contractReserve` |
+| CLC2 mint                | $1000       | `amountForNewCard` from reserve + card `rewardBalance` (auto-mint CLC2) |
 
 **CLC2 (gift CLC2; cap $1000):** Same queue/developer/overlap flow as a normal Diamond CLC2 when the gift CLC2 card is **generated** (Developer SC2 $274.5, SC1b $225, SC3 $0.50; queue remainder → SC1). When the **gift CLC2 card is generated**, an additional **$500** goes to **SC1 Overlap**. When the gift CLC2 card **reaches cap** ($1000), **$1000** goes to **Gift Card SC** (no user payout).
 
 | Phase | Gift Card SC | SC3 | SC1 Overlap | CLC2 / SC2 / SC1b |
 |-------|--------------|-----|-------------|--------------------|
-| **Gift CLC1 cap** | $1000 | $126 | $374 | $1000 to mint CLC2 |
+| **Gift CLC1 cap** | $1000 | — | — | $1000 to mint CLC2 |
 | **Gift CLC2 generated** | — | $0.50 | $500 (+ queue remainder) | SC2 $274.5, SC1b $225 |
 | **Gift CLC2 cap** | $1000 | — | — | — |
 

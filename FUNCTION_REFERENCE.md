@@ -20,7 +20,7 @@ Quick reference for all contract and frontend functions.
 | `creditReferralCashbackFromSc4(referrer, amount)` | external | Only SC4. After SC4 transfers `amount` USDT to Master, applies Cards Cashback to the referrer’s CLC1/CLC2 queue (ascending `tokenId`). |
 | `giftClc1ReferralMainFlowUnlocked(tokenId)` | view | **Gift CLC1:** always **`true`** in current logic (legacy name; cashback uses Diamond routing from mint). |
 | `giftClc1LoyaltyCapReductionWei(tokenId)` | view | Deprecated; returns **0** (no cap reduction). |
-| `referralDiamondMintCountForUpline(upline)` | view | Paid **Diamond CLC1** mints by referred users (upline resolution per gift spec), capped at **3**; gates Gift SC payouts. |
+| `referralDiamondMintCountForUpline(upline)` | view | **Diamond CLC1** mints only (not CLC2 auto-mint); upline = `referredBy[mintee]` or `referrerOf` on new token; capped at **3**; gates Gift SC **`payoutGiftClc1Bonus` / `payoutGiftClc2Bonus`**. |
 | `giftLoyaltyMilestoneApplied(giftOwner)` | view | Deprecated; always **`false`** (milestone removed). |
 | `totalSupply()` | view | Number of tokens minted. |
 | `tierOf(tokenId)` | view | Tier (0–3) of the card. |

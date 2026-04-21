@@ -1,6 +1,6 @@
 # Gift Card & Raffle Coupon
 
-This document describes the **Gift Card** flow (admin-sent card; **queue + Cards Cashback** accrue like Diamond CLC1 from the start; **$1000** to Gift Card SC at CLC1 cap finalize and **$1000** at CLC2 cap finalize; **two** separate **$1000** user payouts from Gift Card SC when **three** referred Diamond CLC1 mints are recorded on-chain **and** the corresponding cap flag is set on Gift Card SC) and the **Raffle Coupon** system (1 coupon per 1,000 points; serial = wallet).
+This document describes the **Gift Card** flow (admin-sent card; **queue + Cards Cashback** accrue on Gift CLC1 to a **$2000** cap; at CLC1 cap finalize **$1000** to Gift Card SC and **$1000** to CLC2 mint; **$1000** to Gift Card SC at CLC2 cap finalize; **two** separate **$1000** user payouts from Gift Card SC when **three** referred Diamond CLC1 mints are recorded on-chain **and** the corresponding cap flag is set on Gift Card SC) and the **Raffle Coupon** system (1 coupon per 1,000 points; serial = wallet).
 
 ---
 
@@ -8,7 +8,7 @@ This document describes the **Gift Card** flow (admin-sent card; **queue + Cards
 
 ### 1.1 Overview
 
-A **gift card** is minted by an **admin** to a wallet that has **never minted any card**. The recipient does not pay. **Gift CLC1** receives **main queue** (`rewardToPrev`) and **Cards Cashback** (Condition 4, same as Diamond referrer) from the first qualifying mint — there is **no** locked phase, **no** incremental USDT routing to Gift Card SC before cap, and **no** **$300** milestone. **USDT** accrues on the gift card’s **`rewardBalance`** until the **CLC1 reward cap** ($2500 nominal in default tier config). When CLC1 hits cap, Master finalizes: **$1000** to **Gift Card SC**, SC3/SC1 slices per spec, and **$1000** funds **gift CLC2** generation. When **gift CLC2** hits cap, **$1000** goes to Gift Card SC. The **gift card user** may receive **$1000** from Gift Card SC after **3 referred Diamond CLC1 mints** (on-chain counter) **and** CLC1 cap recorded on Gift Card SC, and **another $1000** after the same **3** diamonds **and** CLC2 cap recorded — see §1.8.
+A **gift card** is minted by an **admin** to a wallet that has **never minted any card**. The recipient does not pay. **Gift CLC1** receives **main queue** (`rewardToPrev`) and **Cards Cashback** (Condition 4, same as Diamond referrer) from the first qualifying mint — there is **no** locked phase, **no** incremental USDT routing to Gift Card SC before cap. **USDT** accrues on the gift card’s **`rewardBalance`** until the **CLC1 reward cap** (**$2000** nominal in default `TierConfigLib`). There is **no** CLC1 wallet tranche on the gift tier (`withdrawAmount` = 0): the full **$2000** stays on-card until cap. When CLC1 hits cap, Master finalizes: **$1000** from **`contractReserve`** to **Gift Card SC**, and **$1000** from reserve (plus **$1000** deducted from the card’s **`rewardBalance`**) funds **gift CLC2** generation (same **$1000** CLC2 split as Diamond). There is **no** separate **$126** SC3 / **$374** SC1 overlap slice at gift CLC1 finalize. When **gift CLC2** hits cap, **$1000** goes to Gift Card SC. The **gift card user** may receive **$1000** from Gift Card SC after **3 referred Diamond CLC1 mints** (on-chain counter) **and** CLC1 cap recorded on Gift Card SC, and **another $1000** after the same **3** diamonds **and** CLC2 cap recorded — see §1.8.
 
 ---
 
@@ -43,22 +43,20 @@ Each **paid Diamond CLC1** mint by a user whose **on-chain referrer** is the **g
 
 ---
 
-### 1.6 What happens when gift CLC1 cap is reached ($2500 nominal)
+### 1.6 What happens when gift CLC1 cap is reached ($2000 nominal)
 
-When the gift CLC1 card’s **`rewardBalance` reaches the CLC1 reward cap** (nominal **$2500** in default `TierConfigLib`), the Master contract:
+When the gift CLC1 card’s **`rewardBalance` reaches the CLC1 reward cap** (nominal **$2000** in default `TierConfigLib`), the Master contract:
 
 | Destination        | Amount (USDT) | Note                          |
 |--------------------|----------------|-------------------------------|
-| **Gift Card SC**   | $1000          | Received by GiftCardReceiver  |
-| **SC3 Loyalty**    | $126           | POINTS vault (same slice as Diamond CLC1 mint’s SC3 share); Master credits **loyalty points** to the gift owner and **level points** to their referral upline — see [CARDS_POINTS.md](CARDS_POINTS.md) |
-| **SC1 Overlap**    | $374           | OverlapReceiver               |
-| **CLC2 mint**      | $1000          | Auto-mints gift CLC2 for owner |
+| **Gift Card SC**   | $1000          | From **`contractReserve`**; `GiftCardReceiver` |
+| **CLC2 mint**      | $1000          | **`amountForNewCard`**: **$1000** from **`rewardBalance`** on the gift CLC1 and **$1000** from **`contractReserve`** in the same auto-mint step (same pattern as other tiers). Auto-mints gift CLC2 for owner. |
 
-There is **no direct payout to the user** at CLC1 cap; the user’s CLC2 card is created and will receive flow until it reaches its cap.
+There is **no** **$126** / **$374** SC3 / SC1 leg at gift CLC1 finalize (unlike Diamond CLC1 cap). There is **no** CLC1 wallet tranche on the gift tier; value is **$1000** to Gift SC plus **$1000** toward CLC2.
 
 Master calls **`GiftCardReceiver.onGiftCLC1CapReached(beneficiary)`** after sending the **$1000** slice so Gift Card SC can record **condition A** for the **first $1000** user payout (§1.8).
 
-The contract requires **contractReserve ≥ $2500** when gift CLC1 cap finalization runs: **$1500** for the cap payout (1000 + 126 + 374) and **$1000** for the CLC2 generation that follows. If reserve is insufficient, Master reverts with `ErrReserveGiftCap`.
+The contract requires **`contractReserve ≥ $2000`** when gift CLC1 cap finalization runs: **$1000** to Gift Card SC and **$1000** for the CLC2 generation that follows. If reserve is insufficient, Master reverts with `ErrReserveGiftCap`.
 
 **Gift CLC2 generation — same cash flow as Diamond CLC2 ($1000)**  
 When the gift CLC1 cap is reached, the contract uses **$1000** (amountForNewCard) from reserve to generate the gift CLC2 card. That **$1000** is paid out in the **same way** as a Diamond CLC2:
@@ -89,12 +87,14 @@ Again, no user payout at finalize; the Gift Card SC records **CLC2 cap** for tha
 
 ### 1.8 When the gift card user receives $1000 + $1000
 
-**Gift Card SC** holds USDT from CLC1/CLC2 finalizations. The **owner** calls:
+**Gift Card SC** holds USDT from CLC1/CLC2 finalizations. The **Gift Card SC contract owner** (admin hot wallet) calls the payout functions. **`giftCardUser`** must be the **gift card owner’s wallet** (user **A**): the same address Master recorded as **`beneficiary`** in **`onGiftCLC1CapReached` / `onGiftCLC2CapReached`** — i.e. **`ownerOf`** the gift CLC1 / gift CLC2 token at the moment each cap was finalized. **USDT is transferred to `giftCardUser`** (user **A**’s wallet).
 
 | Function | Requirements (enforced on-chain) | Payout |
 |----------|-----------------------------------|--------|
-| **`payoutGiftClc1Bonus(giftCardUser)`** | `referralDiamondMintCountForUpline(giftCardUser) >= 3` and `giftClc1CapReached[giftCardUser]` | **$1000** |
-| **`payoutGiftClc2Bonus(giftCardUser)`** | Same **3** diamonds and `giftClc2CapReached[giftCardUser]` | **$1000** |
+| **`payoutGiftClc1Bonus(giftCardUser)`** | **`referralDiamondMintCountForUpline(giftCardUser) >= 3`** and **`giftClc1CapReached[giftCardUser]`** | **$1000** to **`giftCardUser`** |
+| **`payoutGiftClc2Bonus(giftCardUser)`** | **≥ 3** qualifying Diamonds and **`giftClc2CapReached[giftCardUser]`** | **$1000** to **`giftCardUser`** |
+
+**Three Diamonds:** Each increment is a **paid (or owner) Diamond CLC1** mint by a user whose on-chain referrer is **`giftCardUser`** (`referredBy[mintee]` or else **`referrerOf`** on the new CLC1 token). **Diamond CLC2** auto-mints do **not** increment the counter. **Order does not matter:** CLC1 cap may finalize before or after the 3rd Diamond; payouts succeed only when **both** the cap flag and **≥ 3** are true.
 
 **Legacy:** **`payoutBothConditionsMet`** still sends **$2000** in one transfer when only CLC2 was historically recorded (older deployments). It **reverts** if either split bonus was already used (`paidGiftClc1Bonus` / `paidGiftClc2Bonus`).
 
@@ -176,4 +176,4 @@ The backend never deletes coupons when points drop; it only **adds** coupons whe
 | **Reward**     | **$1000** + **$1000** from Gift Card SC (§1.8) after 3 referred Diamonds + CLC1/CLC2 cap flags | 1 coupon per 1000 points; serial = wallet |
 | **Trigger**    | Admin sends card; admin calls `payoutGiftClc1Bonus` / `payoutGiftClc2Bonus` | Backend creates coupons when loyalty is synced/upserted |
 
-For full cash flow of the gift card (CLC1/CLC2 caps, SC3, SC1), see [MAIN_FLOW_AND_CASHFLOW.md](MAIN_FLOW_AND_CASHFLOW.md) §2.5 and [SMART_CONTRACTS_AND_PAYMENTS.md](SMART_CONTRACTS_AND_PAYMENTS.md) (Gift Card SC).
+For full cash flow of the gift card (CLC1 **$2000** / CLC2 **$1000** caps, Gift SC), see [MAIN_FLOW_AND_CASHFLOW.md](MAIN_FLOW_AND_CASHFLOW.md) §2.5 and [SMART_CONTRACTS_AND_PAYMENTS.md](SMART_CONTRACTS_AND_PAYMENTS.md) (Gift Card SC).
