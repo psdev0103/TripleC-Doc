@@ -18,7 +18,10 @@ Quick reference for all contract and frontend functions.
 | `claimCLC2(tokenId)` | external | Owner only. Mint deferred CLC2 card when reserve was insufficient at completion (batch mint). |
 | `getReferrerCashbackLevel(referrer)` | view | Returns referrer's Cards Cashback qualification level (1–4). Condition 2 = has Platinum + Bronze CLC2 done; 3 = Emerald + Bronze & Platinum CLC2 done; 4 = Diamond + all lower CLC2 done. |
 | `creditReferralCashbackFromSc4(referrer, amount)` | external | Only SC4. After SC4 transfers `amount` USDT to Master, applies Cards Cashback to the referrer’s CLC1/CLC2 queue (ascending `tokenId`). |
-| `giftClc1ReferralMainFlowUnlocked(tokenId)` | view | **Gift CLC1:** `true` after the **3** referred-Diamond loyalty milestone; then cashback uses Diamond wallet / virtual-CLC2 routing. |
+| `giftClc1ReferralMainFlowUnlocked(tokenId)` | view | **Gift CLC1:** always **`true`** in current logic (legacy name; cashback uses Diamond routing from mint). |
+| `giftClc1LoyaltyCapReductionWei(tokenId)` | view | Deprecated; returns **0** (no cap reduction). |
+| `referralDiamondMintCountForUpline(upline)` | view | Paid **Diamond CLC1** mints by referred users (upline resolution per gift spec), capped at **3**; gates Gift SC payouts. |
+| `giftLoyaltyMilestoneApplied(giftOwner)` | view | Deprecated; always **`false`** (milestone removed). |
 | `totalSupply()` | view | Number of tokens minted. |
 | `tierOf(tokenId)` | view | Tier (0–3) of the card. |
 | `rewardBalance(tokenId)` | view | Current reward balance (USDT) on the card. |
@@ -83,8 +86,11 @@ Quick reference for all contract and frontend functions.
 
 | Function | Type | Description |
 |----------|------|-------------|
-| `onGiftCLC2CapReached(beneficiary)` | external | Only Master. Records that this user’s gift CLC2 card reached cap (condition 2). |
-| `payoutBothConditionsMet(giftCardUser)` | external | Owner only. Sends $2000 USDT to `giftCardUser` when condition 2 is set and not yet paid; admin must verify condition 1 (**3** Diamond mints; align with Master milestone / `GiftLoyaltyThreeDiamonds` — not enforced in this contract). |
+| `onGiftCLC1CapReached(beneficiary)` | external | Only Master. Sets `giftClc1CapReached` after CLC1 cap finalize ($1000 received). |
+| `onGiftCLC2CapReached(beneficiary)` | external | Only Master. Sets `giftClc2CapReached` after gift CLC2 cap finalize ($1000 received). |
+| `payoutGiftClc1Bonus(giftCardUser)` | external | Owner only. **$1000** when `referralDiamondMintCountForUpline >= 3` and CLC1 cap recorded; not already paid. |
+| `payoutGiftClc2Bonus(giftCardUser)` | external | Owner only. **$1000** when `referralDiamondMintCountForUpline >= 3` and CLC2 cap recorded; not already paid. |
+| `payoutBothConditionsMet(giftCardUser)` | external | Owner only. Legacy: **$2000** in one transfer when allowed by older state (reverts if split bonuses used). |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
 | `setPaymentToken(token)` | external, owner | Set USDT token address. |
 | `withdrawToken(token, to, amount)` | external, owner | Withdraw ERC20 to `to`. |

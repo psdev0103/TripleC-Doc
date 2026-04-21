@@ -188,11 +188,11 @@ Gift cards are **not paid by the user**. An admin sends a gift card to a wallet 
 
 **Eligibility:** Only wallets with **zero** cards can receive a gift card. The admin page checks eligibility and the contract reverts if the recipient already owns any card.
 
-**Referrer condition:** A gift card user is treated as **Condition D** (level 4) for **Cards Cashback amounts**: when someone they referred mints, the cashback **tier** is the same as if the referrer had a Diamond card. **Settlement routing** on Master depends on **main-flow unlock** (see [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.4): **before** **3** referred Diamond mints, cashback accrues to Gift CLC1 **`rewardBalance`** only; **after** unlock, cashback follows the same **wallet / virtual CLC2** paths as Diamond.
+**Referrer condition:** A gift card user is treated as **Condition D** (level 4) for **Cards Cashback amounts** (the USDT slice sent via SC4). **Queue** and **Cards Cashback** settle on Gift CLC1 like **Diamond CLC1** from the first qualifying mint (no locked phase). See [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md).
 
-**Loyalty milestone (Master, on-chain):** When users with **`referredBy[mintee] = giftOwner`** mint **3** **Diamond** CLC1 cards (paid mints), Master credits **$300** from reserve onto the gift owner’s active Gift CLC1 **`rewardBalance`**, reduces that token’s **effective** CLC1 cap by **$300**, and sets **`giftClc1ReferralMainFlowUnlocked`**. Emits **`GiftLoyaltyThreeDiamonds`**. If the 3rd Diamond happens before the gift exists, the milestone applies when **`safeMintGift`** mints the gift.
+**Three referred Diamonds (Master, on-chain):** Each paid **Diamond CLC1** mint by a user whose on-chain referrer is the **gift card owner** increments **`referralDiamondMintCountForUpline[giftOwner]`** up to **3**. This counter **only** gates **Gift Card SC** user payouts ([GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.8). At **3**, Master emits **`GiftReferralDiamondCountReached`**.
 
-**CLC1 ($0 user payment; nominal cap $2500; effective cap $2200** after loyalty milestone **$300** reduction):**
+**CLC1 ($0 user payment; CLC1 reward cap $2500** nominal in default tier config):**
 
 | When CLC1 cap is reached | Destination | Amount (USDT) |
 |--------------------------|-------------|---------------|
@@ -209,7 +209,7 @@ Gift cards are **not paid by the user**. An admin sends a gift card to a wallet 
 | **Gift CLC2 generated** | — | $0.50 | $500 (+ queue remainder) | SC2 $274.5, SC1b $225 |
 | **Gift CLC2 cap** | $1000 | — | — | — |
 
-**$2000 user payout (Gift Card SC):** Once **both** are satisfied — (1) **3 Diamond** mints by users who have the gift card owner as **referrer** (confirm via Master milestone / events or off-chain), and (2) gift **CLC2** cap was reached (recorded on-chain via `onGiftCLC2CapReached`) — an admin calls `payoutBothConditionsMet`. Details: [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.8.
+**$1000 + $1000 user payouts (Gift Card SC):** Owner calls **`payoutGiftClc1Bonus`** / **`payoutGiftClc2Bonus`** when **`referralDiamondMintCountForUpline(giftCardUser) >= 3`** and Master has recorded **`onGiftCLC1CapReached`** / **`onGiftCLC2CapReached`** for that user. **Legacy:** **`payoutBothConditionsMet`** still sends **$2000** in one transfer for older deployments when appropriate. Details: [GIFT_CARD_AND_RAFFLE_COUPON.md](GIFT_CARD_AND_RAFFLE_COUPON.md) §1.8.
 
 ---
 
