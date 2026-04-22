@@ -8,7 +8,7 @@ This document describes the **Gift Card** flow (admin-sent card; **queue + Cards
 
 ### 1.1 Overview
 
-A **gift card** is minted by an **admin** to a wallet that has **never minted any card**. The recipient does not pay. **Gift CLC1** receives **main queue** (`rewardToPrev`) and **Cards Cashback** (Condition 4, same as Diamond referrer) from the first qualifying mint — there is **no** locked phase, **no** incremental USDT routing to Gift Card SC before cap. **USDT** accrues on the gift card’s **`rewardBalance`** until the **CLC1 reward cap** (**$2000** nominal in default `TierConfigLib`). There is **no** CLC1 wallet tranche on the gift tier (`withdrawAmount` = 0): the full **$2000** stays on-card until cap. When CLC1 hits cap, Master finalizes: **$1000** from **`contractReserve`** to **Gift Card SC**, and **$1000** from reserve (plus **$1000** deducted from the card’s **`rewardBalance`**) funds **gift CLC2** generation (same **$1000** CLC2 split as Diamond). There is **no** separate **$126** SC3 / **$374** SC1 overlap slice at gift CLC1 finalize. When **gift CLC2** hits cap, **$1000** goes to Gift Card SC. The **gift card user** may receive **$1000** from Gift Card SC after **3 referred Diamond CLC1 mints** (on-chain counter) **and** CLC1 cap recorded on Gift Card SC, and **another $1000** after the same **3** diamonds **and** CLC2 cap recorded — see §1.8.
+A **gift card** is minted by an **admin** to a wallet that has **never minted any card**. The recipient does not pay. **Gift CLC1** receives **main queue** (`rewardToPrev`) and **Cards Cashback** (Condition 4, same as Diamond referrer) from the first qualifying mint — there is **no** locked phase. The **$2000** CLC1 program is **split**: the **first $1000** (same nominal as `amountForNewCard`) is taken from each accrual **first** and **streamed** to **Gift Card SC** as USDT arrives (see `giftClc1StreamedToGiftSCWei` on Master); Master calls **`onGiftCLC1CapReached`** when that first leg is **fully** funded (either mid-accrual or via any remainder at CLC1 cap finalize). The **second $1000** accrues on **`rewardBalance`** up to **`rewardCap - amountForNewCard`** (**$1000** on-card with default `TierConfigLib`). There is **no** CLC1 wallet tranche on the gift tier (`withdrawAmount` = 0). When **`rewardBalance`** hits that **$1000** on-card cap, Master finalizes CLC1: sends **only any remaining** first-leg USDT owed to Gift SC (if not already fully streamed), then **$1000** from reserve (plus **$1000** deducted from **`rewardBalance`**) funds **gift CLC2** (same **$1000** CLC2 split as Diamond). There is **no** separate **$126** SC3 / **$374** SC1 overlap slice at gift CLC1 finalize. When **gift CLC2** hits cap, **$1000** goes to Gift Card SC. The **gift card user** may receive **$1000** from Gift Card SC after **3 referred Diamond CLC1 mints** (on-chain counter) **and** CLC1 cap recorded on Gift Card SC, and **another $1000** after the same **3** diamonds **and** CLC2 cap recorded — see §1.8.
 
 ---
 
@@ -33,7 +33,7 @@ A **gift card** is minted by an **admin** to a wallet that has **never minted an
 
 Each **paid Diamond CLC1** mint by a user whose **on-chain referrer** is the **gift card owner** increments **`referralDiamondMintCountForUpline[giftOwner]`** up to **3** (same upline resolution: **`referredBy[mintee]`** else **`referrerOf[mintedTokenId]`**). This counter **only** gates **Gift Card SC** user payouts (§1.8). When the count reaches **3**, Master emits **`GiftReferralDiamondCountReached(giftReferrerUpline, 3)`**.
 
-**Cards Cashback** and **queue** behave like **Diamond CLC1** for the gift owner from the first mint (SC4 settles to Master; queue accrues to **`rewardBalance`**).
+**Cards Cashback** and **queue** behave like **Diamond CLC1** for the gift owner from the first mint (SC4 settles to Master; accrual **first** fills the **$1000** first leg to Gift Card SC, then the **second $1000** on **`rewardBalance`**).
 
 ---
 
@@ -45,18 +45,22 @@ Each **paid Diamond CLC1** mint by a user whose **on-chain referrer** is the **g
 
 ### 1.6 What happens when gift CLC1 cap is reached ($2000 nominal)
 
-When the gift CLC1 card’s **`rewardBalance` reaches the CLC1 reward cap** (nominal **$2000** in default `TierConfigLib`), the Master contract:
+**Program:** **$1000** first leg (streamed over time from queue + cashback) **+** **$1000** second leg on **`rewardBalance`**. Cap-finalize runs when **`rewardBalance`** reaches the **second-leg** cap (**`rewardCap - amountForNewCard`**, **$1000** by default).
+
+**Already streamed:** Master tracks **`giftClc1StreamedToGiftSCWei[tokenId]`**. At finalize, **`firstLegOwed = $1000 - streamed`** (zero if the first leg was fully paid during accrual).
+
+When the gift CLC1 card’s **`rewardBalance` reaches that second-leg cap**, the Master contract:
 
 | Destination        | Amount (USDT) | Note                          |
 |--------------------|----------------|-------------------------------|
-| **Gift Card SC**   | $1000          | From **`contractReserve`**; `GiftCardReceiver` |
+| **Gift Card SC**   | up to **$1000** ( **`firstLegOwed`** ) | From **`contractReserve`**; **$0** if first leg already fully streamed |
 | **CLC2 mint**      | $1000          | **`amountForNewCard`**: **$1000** from **`rewardBalance`** on the gift CLC1 and **$1000** from **`contractReserve`** in the same auto-mint step (same pattern as other tiers). Auto-mints gift CLC2 for owner. |
 
-There is **no** **$126** / **$374** SC3 / SC1 leg at gift CLC1 finalize (unlike Diamond CLC1 cap). There is **no** CLC1 wallet tranche on the gift tier; value is **$1000** to Gift SC plus **$1000** toward CLC2.
+There is **no** **$126** / **$374** SC3 / SC1 leg at gift CLC1 finalize (unlike Diamond CLC1 cap). There is **no** CLC1 wallet tranche on the gift tier; value is **$1000** to Gift SC (cumulative, including prior streams) plus **$1000** toward CLC2.
 
-Master calls **`GiftCardReceiver.onGiftCLC1CapReached(beneficiary)`** after sending the **$1000** slice so Gift Card SC can record **condition A** for the **first $1000** user payout (§1.8).
+Master calls **`GiftCardReceiver.onGiftCLC1CapReached(beneficiary)`** after sending **`firstLegOwed`** when **`firstLegOwed > 0`** (if the first leg was already completed during accrual, finalize **does not** call it again).
 
-The contract requires **`contractReserve ≥ $2000`** when gift CLC1 cap finalization runs: **$1000** to Gift Card SC and **$1000** for the CLC2 generation that follows. If reserve is insufficient, Master reverts with `ErrReserveGiftCap`.
+The contract requires **`contractReserve ≥ firstLegOwed + $1000`** when gift CLC1 cap finalization runs: **remainder of first leg** to Gift Card SC and **$1000** for the CLC2 generation that follows. If reserve is insufficient, Master reverts with `ErrReserveGiftCap`.
 
 **Gift CLC2 generation — same cash flow as Diamond CLC2 ($1000)**  
 When the gift CLC1 cap is reached, the contract uses **$1000** (amountForNewCard) from reserve to generate the gift CLC2 card. That **$1000** is paid out in the **same way** as a Diamond CLC2:
