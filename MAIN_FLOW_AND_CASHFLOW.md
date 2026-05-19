@@ -35,6 +35,8 @@ This document describes the **main user and system flow** and the **cash flow** 
    - **Loyalty & Level points** are credited in SC3 when the user mints (CLC1 only; CLC2 does not add points).  
    - **Cards Cashback history** shows the full condition-based cashback recorded when referrals mint (credited to the referrer’s card queue on-chain, or retained in SC4 if they had no NFT).
 
+9. **CCC Hub (`/ccc-hub`)** *(separate contracts)* — Users can redeem **SC3 loyalty + level points** for **CCC** (multiples of 10 points), swap **CCC → USDT** (fixed rate; USDT pulled from SC3 liquidity), or **stake** CCC for **daily reward** accrual (**claim rewards** pays reward CCC only; **no user unstake** in current hub). See **[CCC_HUB_SPEC.md](CCC_HUB_SPEC.md)** / [FULL_PROJECT_SPEC.md](FULL_PROJECT_SPEC.md) §3.
+
 ---
 
 ### 1.2 System flow (what happens on each paid mint)
@@ -58,7 +60,7 @@ User approves USDT → mintWithPayment(to, referrer, tier)
   └─ If any previous card reached cap during this distribution:
        → Payout to that card’s owner (95% / 5%)
        → If CLC1: optionally auto-mint CLC2 for owner (from reserve)
-       → On CLC2 mint: flow in row queue (see 3.4) + 95% of flow to SC1b + 5% of flow to POINTS SC (SC3)
+       → On CLC2 mint: queue distribution as usual + **fixed** splits to SC2, SC1b, and **$0.50** to SC3 (see §2.0); remainder/overflow queue → SC1
 ```
 
 ---

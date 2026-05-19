@@ -68,7 +68,8 @@ Use this as a script to record a video that describes all functions of the proje
 
 ## 9. Smart Contracts Summary (1 min)
 
-- **Say:** “On the backend we have five contracts. CustomNFT is the master: it handles minting, queue distribution, overflow, and calls SC2, SC3, and SC4. OverlapReceiver (SC1) receives queue overflow. DeveloperReceiver (SC2) holds the developer share; the owner withdraws. LoyaltyLevelVault (SC3) holds the loyalty/level USDT and credits points per user; only the master can credit. ReferralFeeHandler (SC4) receives the 10% referral amount and splits it 5% to referrer, 5% to fee pool; the owner can withdraw the fee pool.”
+- **Say:** “The mint flow sits on CustomNFT—the master contract: minting, queue distribution, overflow, payouts, and wired sends to SC1, SC2, SC3, SC4, SC5 where configured. SC1 catches queue overflow that doesn’t attach to older cards; SC2 is developer/share; SC3 Loyalty Level Vault receives the loyalty legs and credits points plus holds USDT that can fund CCC swaps. SC4 Cards Cashback receives the referrer deposit—when eligible it sends five percent to the five-percent contract and ninety-five percent is pushed through Master to the referrer’s cards in queue, or retained in SC4 if there’s nowhere to attach it.”
+- **Say:** “There are also CCC Hub contracts—CCCToken and CCC Platform—outside that mint diagram: redeem points from SC3 into CCC and optional swap CCC to USDT. Staking earns daily reward CCC via claim rewards; unstake isn’t exposed in our current hub design.” *(See [CCC_HUB_SPEC.md](CCC_HUB_SPEC.md) / [SYSTEM_DIAGRAM.md](SYSTEM_DIAGRAM.md).)*
 - **Optional:** Show repo or a diagram (see SYSTEM_DIAGRAM.md).
 
 ---
@@ -80,4 +81,4 @@ Use this as a script to record a video that describes all functions of the proje
 
 ---
 
-**Total suggested length:** ~10–11 minutes. Shorten or expand any section as needed.
+**Total suggested length:** ~10–12 minutes if you narrate CCC Hub; shorten any section as needed.

@@ -64,11 +64,40 @@ Quick reference for all contract and frontend functions.
 
 | Function | Type | Description |
 |----------|------|-------------|
-| `creditPoints(user, loyaltyDelta, levelDelta)` | external | Only Master. Credits loyalty and level points to `user`. |
+| `creditPoints(user, loyaltyDelta, levelDelta)` | external | **Master** or allowlisted **`loyaltyPointCreditors`** (e.g. payment split lib). Credits loyalty and level points. |
+| `debitTotalPoints(user, totalBurn)` | external | **Master** or allowlisted **`loyaltyPointConsumers`** (e.g. CCCPlatform). Burns loyalty balance first, then level. |
+| `pullUsdtForCccSwap(token, to, amount)` | external | Only **`cccPlatformSwapPuller`** (CCCPlatform). Sends USDT from vault for CCC→USDT swaps. |
+| `setLoyaltyPointCreditor(account, allowed)` | external, owner | Allow helper contracts to call `creditPoints`. |
+| `setLoyaltyPointConsumer(account, allowed)` | external, owner | Allow contracts (CCCPlatform) to call `debitTotalPoints`. |
+| `setCccPlatformSwapPuller(account)` | external, owner | Single CCCPlatform allowed to pull USDT for swaps. |
+| `getTotalPoints(user)` | view | `loyaltyPoints + levelPoints`. |
 | `loyaltyPoints(user)` | view | Loyalty points for `user`. |
 | `levelPoints(user)` | view | Level points for `user`. |
 | `setMaster(newMaster)` | external, owner | Set the Master (CustomNFT) address. |
 | `withdrawToken(token, to, amount)` | external, owner | Withdraw ERC20 (e.g. excess USDT) to `to`. |
+
+---
+
+### CCCToken
+
+| Function | Type | Description |
+|----------|------|-------------|
+| `decimals()` | view | Returns **6**. |
+| Constructor | — | Mints **100_000_000** CCC to deployer. |
+
+---
+
+### CCCPlatform
+
+| Function | Type | Description |
+|----------|------|-------------|
+| `previewPointsToCcc(totalPoints)` | view | CCC out for valid point multiples of 10 (1000 points → 300 CCC smallest units). |
+| `swapPointsForCcc(totalPointsToBurn)` | external | Debits points on vault; transfers CCC from platform balance to user. |
+| `swapCccForUsdt(cccAmountIn)` | external | 5% CCC burn; remainder priced at **$0.05/CC**; pulls USDT from SC3 via `pullUsdtForCccSwap`. |
+| `stake(amount)` | external | 5% burn; net added to stake; accrues **0.8%/day**. **No unstake:** principal stays on hub until redeploy/migration. |
+| `claimStakeRewards()` | external | Claims accrued **reward** CCC from platform balance (does not withdraw staked principal). |
+| `pendingStakeRewards(account)` | view | Accrued + time-weighted pending rewards. |
+| `rescueErc20(token, to, amount)` | external, owner | Recover stray ERC20. |
 
 ---
 
@@ -117,10 +146,21 @@ Quick reference for all contract and frontend functions.
 | `getCustomNFTContract(useSigner)` | Return CustomNFT contract instance (read or write). |
 | `getPaymentTokenContract(useSigner)` | Return payment token (ERC20) contract instance. |
 | `getLoyaltyLevelContract(useSigner)` | Return LoyaltyLevelVault (SC3) contract instance. |
+| `getCCCPlatformContract(useSigner)` | Return CCCPlatform from `CONTRACT_ADDRESSES[chainId].CCCPlatform`. |
+| `getCCCTokenContract(useSigner)` | Return CCCToken from `CONTRACT_ADDRESSES[chainId].CCCToken`. |
 | `account` | Current wallet address (or null). |
 | `chainId` | Current chain ID. |
 | `isConnected` | True when account is set. |
 | `error`, `isConnecting` | Connection error message and loading state. |
+
+### CccHub.jsx (CCC Hub page)
+
+| Handler / flow | Description |
+|-----------------|-------------|
+| Points → CCC | `swapPointsForCcc` after allowance N/A (points on vault); multiples of 10 points. |
+| CCC → USDT | Approve CCC to platform; `swapCccForUsdt`; previews match contract (5% burn, $0.05/CC). |
+| Stake / claim | `stake`, `claimStakeRewards`; reads `stakes`, `pendingStakeRewards`. |
+| Liquidity display | USDT **`balanceOf(LoyaltyLevelVault)`** when vault configured (swap liquidity). |
 
 ### App.jsx (main UI)
 
@@ -138,7 +178,7 @@ Quick reference for all contract and frontend functions.
 
 | Export | Description |
 |--------|-------------|
-| `CONTRACT_ADDRESSES` | By chainId: CustomNFT, PaymentToken, LoyaltyLevelVault, Sc1Overlap, Sc2Developer, Sc4Referral. |
+| `CONTRACT_ADDRESSES` | By chainId: CustomNFT, PaymentToken, LoyaltyLevelVault, Sc1Overlap, Sc1bOverlap2, Sc2Developer, Sc4Referral, Sc5FivePercent, GiftCardReceiver, CCCToken, CCCPlatform, etc. |
 | `SC_LABELS` | Display names for cash flow (Overlap, Developer, Loyalty/Level, Referral). |
 | `CARD_TIERS` | Tier names, prices, ROI, CLC caps, queue/referral/loyalty/developer amounts. |
 | `LOYALTY_POINTS_PER_TIER` | Points earned per tier (CLC1 only). |

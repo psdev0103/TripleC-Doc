@@ -21,6 +21,8 @@ flowchart LR
     SC2[DeveloperReceiver\nSC2]
     SC3[LoyaltyLevelVault\nSC3]
     SC4[ReferralFeeHandler\nSC4]
+    Plat[CCCPlatform]
+    CCC[CCCToken]
     USDT[USDT\nPayment Token]
   end
   Wallet <--> Web3
@@ -33,6 +35,33 @@ flowchart LR
   Master --> SC2
   Master --> SC3
   Master --> SC4
+  App --> Plat
+  Plat --> SC3
+  Plat --> CCC
+```
+
+---
+
+## CCC Hub (CCCToken + CCCPlatform + SC3)
+
+```mermaid
+flowchart LR
+  subgraph User
+    Wallet[Wallet]
+  end
+  subgraph CCC["CCC stack"]
+    Plat[CCCPlatform]
+    Tok[CCCToken]
+    SC3[LoyaltyLevelVault]
+  end
+  Wallet -->|swapPointsForCcc| Plat
+  Plat -->|debitTotalPoints| SC3
+  Plat -->|CCC transfer| Wallet
+  Wallet -->|swapCccForUsdt approve| Plat
+  Plat -->|pullUsdtForCccSwap| SC3
+  SC3 -->|USDT| Wallet
+  Plat --> Tok
+  Wallet -->|stake / claimStakeRewards| Plat
 ```
 
 ---
@@ -46,9 +75,9 @@ flowchart TB
   Master -->|queueAmount| Queue[Queue: distribute to\nprevious cards oldest-first]
   Queue -->|per card up to cap| Card[Card rewardBalance]
   Queue -->|overflow| SC1[SC1 OverlapReceiver]
-  Master -->|referralAmount 10%| SC4[SC4 ReferralFeeHandler]
-  SC4 -->|5%| Referrer[Referrer wallet]
-  SC4 -->|5%| FeePool[Fee pool in SC4]
+  Master -->|tier referral deposit| SC4[SC4 ReferralFeeHandler]
+  SC4 -->|when qualified: 95% via Master| ReferrerQueue[Referrer CLC1/CLC2 queue]
+  SC4 -->|5%| SC5Hint[SC5 if configured]
   Master -->|loyaltyLevelAmount| SC3[SC3 LoyaltyLevelVault]
   SC3 -->|creditPoints| Points[Loyalty & Level points]
   Master -->|developerAmount| SC2[SC2 DeveloperReceiver]
@@ -93,6 +122,7 @@ flowchart TB
     MyCards[My Minted Cards\nlist + withdraw]
     CashFlow[Cash Flow & SC Balances\nUSDT in SC1, SC2, SC3, SC4]
     AllCards[All Cards\nLoad All Cards table]
+    CccHub[CCC Hub / Points Swap\n/ccc-hub — gated]
   end
   Connect --> Loyalty
   Loyalty --> Tiers
@@ -114,4 +144,7 @@ flowchart TB
 | **SC1 OverlapReceiver** | Hold queue overflow USDT; owner withdraws. |
 | **SC2 DeveloperReceiver** | Hold developer share USDT; owner withdraws. |
 | **SC3 LoyaltyLevelVault** | Hold loyalty/level USDT; Master credits points per user. |
-| **SC4 ReferralFeeHandler** | Receive 10%; send 5% to referrer, 5% to fee pool; owner withdraws fee pool. |
+| **SC4 ReferralFeeHandler** | Receive full tier cashback deposit on mint; on payout send **5%** to SC5 and **95%** to Master for referrer queue accrual (or retain in SC4 if no referrer/card); owner withdraws retained USDT. |
+| **CCCToken** | ERC20 (6 decimals): user-held CCC used for swaps and stakes. |
+| **CCCPlatform** | Points→CCC (SC3 debit); CCC→USDT (pull USDT from SC3); **`stake`** + **`claimStakeRewards`** (**no unstake** in current hub). Details: [CCC_HUB_SPEC.md](CCC_HUB_SPEC.md). |
+

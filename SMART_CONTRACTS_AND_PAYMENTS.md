@@ -16,6 +16,7 @@ This document describes each smart contract (SC) in the TripleC system and **whe
 | **SC3 LoyaltyLevelVault** | Loyalty & Level (CLC1); CLC2 $0.50 | Master |
 | **SC4 ReferralFeeHandler** | Cards Cashback | Master |
 | **SC5 FivePercentReceiver** | 5% of user payouts | Master, SC4 |
+| **CCCPlatform** | Points→CCC; CCC→USDT (5% burn); staking (5% burn, **0.8%/day** rewards via **`claimStakeRewards`** — **no user unstake**, principal stays on hub); USDT liquidity from SC3 (`pullUsdtForCccSwap`) | User CCC; SC3 sends USDT to user on swap |
 
 ---
 
@@ -172,6 +173,16 @@ If SC5 is not set, Master sends the 5% CLC share to SC2 (DeveloperReceiver) inst
 
 ---
 
+## CCCPlatform (CCC Hub)
+
+**Role:** Separate from mint split — converts **loyalty + level points** (via SC3 debit) into **CCC**, swaps **CCC → USDT** with **5% CCC burn**, and runs **staking**: **5% burn on stake**; **reward** CCC accrues **0.8%/day** on net principal (**`claimStakeRewards`**). **No user unstake** — staked principal is not withdrawn by callers; see **[CCC_HUB_SPEC.md](CCC_HUB_SPEC.md)**.
+
+**USDT on CCC→USDT:** Paid from **LoyaltyLevelVault** balances using **`pullUsdtForCccSwap`** (not from CCCPlatform’s USDT float). Operator must **`setCccPlatformSwapPuller`** on SC3 and fund SC3 with USDT.
+
+**CCC:** Platform must hold CCC for points redemptions, **staking reward payouts**, and **retains staked principal** on contract balance.
+
+---
+
 ## CustomNFT (Master)
 
 **Role:** Not a “receiver” in the same sense — it **collects** USDT from the user on mint and **sends** to SC1, SC1b, SC2, SC3, SC4, and (for CLC payouts) SC5. It holds the queue reserve and distributes to previous cards; when a card reaches cap it pays the owner (95%) and SC5 (5%), and may auto-mint CLC2.
@@ -190,7 +201,8 @@ If SC5 is not set, Master sends the 5% CLC share to SC2 (DeveloperReceiver) inst
 | SC1 | First mint (overlap); any mint where queue is not fully absorbed (unallocated + overflow). CLC1 and CLC2. |
 | SC1b | Only when a CLC2 card is auto-minted; fixed amount per tier (e.g. Bronze $2.25, Diamond $225). |
 | SC2 | Every paid mint; fixed amount per tier. |
-| SC3 | Every paid mint (Loyalty & Level); plus when CLC2 is generated (5% of queue). |
+| SC3 | Every paid mint (Loyalty & Level USDT + points); plus **$0.50** fixed when CLC2 is generated (all tiers). |
 | SC4 | Every paid mint (full referral amount); then pays referrer + SC5 when applicable. |
 | SC5 | When Master pays a card owner at cap (5% of payout); when SC4 pays a referrer (5% of cashback). |
 | Gift Card SC | Receives: CLC1 cap $1000, CLC2 cap $1000. Sends: **$1000** + **$1000** via `payoutGiftClc1Bonus` / `payoutGiftClc2Bonus` when **3** referred Diamond CLC1 mints (enforced on-chain) and the matching cap flag is set; legacy **`payoutBothConditionsMet`** may pay **$2000** once. |
+| **CCCPlatform / SC3** | Swap: user sends CCC to platform; **SC3** sends USDT to user (pull). Points→CCC debits SC3 points; CCC comes from platform balance. |

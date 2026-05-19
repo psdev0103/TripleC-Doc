@@ -113,4 +113,8 @@ If the recipient may **never** pay-mint, admin should call **`safeMintGift(to, r
 - Sum of **`loyaltyPoints`** credits: each **paid CLC1 mint by you** (+10 / +100 / +500 / +1,000 by tier).
 - **CLC2** auto-mint: no **`loyaltyPoints`**.
 
-Example: you mint 1 Platinum CLC1 (+100 **Card Points**) and later CLC2 is created → **CARD POINT** stays 100.
+---
+
+## CCC Hub — spending points (`/ccc-hub`)
+
+Both **CARD POINT** and **LOYALTY POINTS** (SC3 **`loyaltyPoints` + `levelPoints`**) are debited together when a user redeems for CCC: **`debitTotalPoints`** burns **`loyaltyPoints` first**, then **`levelPoints`**, until the requested burn amount is covered. Amounts must be in multiples of **10** points. Economics and treasury funding (CCC on CCCPlatform + USDT on SC3): **[CCC_HUB_SPEC.md](CCC_HUB_SPEC.md)**.
