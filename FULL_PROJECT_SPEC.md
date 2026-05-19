@@ -139,16 +139,16 @@ React 19, Vite 7, ethers.js 6, Tailwind 4, react-i18next; ABIs under `src/abis/`
 
 ### 5.2 Routes / major UI
 
-- **Home:** radial menu; **Points Swap** spoke labels CCC Hub entry **unless** gated (below).
+- **Home:** radial menu; **Points Swap** spoke links **`/ccc-hub`** (inside the page: admins full UI, others Coming Soon — §5.3).
 - **`/ccc-hub`:** **`CccHub.jsx`** — points redeem, CCC/USDT swap preview, **stake + claim rewards** (no unstake in UI for current hub); shows **SC3 USDT balance** as swap liquidity when vault address is configured.
-- **Gating:** **`CccHubGate`**, **`useCccHubNavAccess`** — CCC Hub visible / routable for master wallet (`MasterWallet` in config + on-chain `initialDeployer`), `VITE_TRUSTED_DEPLOYER_WALLETS`, and related allowlists (see `adminContractWallets.js`).
+- **Gating:** **`CccHubGate`** always mounts **`CccHub`**. **`useCccHubNavAccess`** selects full UI vs Coming Soon (**MasterWallet**, **`VITE_TRUSTED_DEPLOYER_WALLETS`**, **`EXTRA_FULL_ADMIN_NAV_WALLETS`**, or on-chain **`CustomNFT.owner()`** / **`initialDeployer()`**); see **`adminContractWallets.js`**.
 
-### 5.3 Points Swap — “Coming Soon” (mainnet production only)
+### 5.3 Points Swap / CCC Hub visibility
 
-When **`import.meta.env.PROD`** is true **and** **`DEFAULT_CHAIN_ID === 56`**, the Home radial **Points Swap** control shows **`home.pointsSwapComingSoon`** (localized) and **does not** navigate to `/ccc-hub`.  
-Testnet (`97`) and dev builds keep the normal link.
+- **`/ccc-hub`:** **Admins** see the full hub (same rules as nav access: **MasterWallet**, **`VITE_TRUSTED_DEPLOYER_WALLETS`**, **`EXTRA_FULL_ADMIN_NAV_WALLETS`**, or on-chain **`CustomNFT.owner()`** / **`initialDeployer()`**). **Non-admins** see localized **Coming Soon** (`home.pointsSwapComingSoon`) on **testnet and mainnet** (development builds use the same rule). While the wallet is connected and on-chain roles are still loading, **`ccc.accessChecking`** is shown briefly.
+- Home radial **Points Swap** always links to **`/ccc-hub`**; the gate is **inside** the page.
 
-**Operational note:** Production must set **`VITE_CHAIN_ID=56`** for BSC mainnet so the gate matches intent.
+**Deprecated note:** Previously, “Coming Soon” applied only to production mainnet by build flag; this is replaced by the **admin wallet** check above.
 
 ### 5.4 i18n
 
@@ -237,6 +237,6 @@ Deployment artifacts: typically **`deployments/mainnet.json`**, **`deployments/t
 | CCC swap liquidity | USDT from **LoyaltyLevelVault**, not CCCPlatform balance |
 | CCC staking | **`unstake` removed** from **CCCPlatform** source; principal not user-withdrawable; **`claimStakeRewards`** only for reward CCC |
 | SC3 CLC2 | **$0.50** fixed — not a percentage of queue |
-| Points Swap UI | Prod **mainnet only**: “Coming Soon” on Home radial |
+| Points Swap UI | **Admin-wallet** gated **Coming Soon** on **`/ccc-hub`** for non-admins (all networks/builds); see §5.3 |
 
 When smart contracts or env contracts change, update **`contracts.js`** (frontend + backend as applicable), **`deployments/*.json`**, and this file’s **§2** / **§3** if behavior changes.

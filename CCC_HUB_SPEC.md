@@ -85,7 +85,7 @@ Hardhat helpers: **`sc3:ccc-consumer:*`**, **`deploy:ccc-platform:*`** in **`SC/
 | **Points → CCC** | Multiples of 10; uses **`swapPointsForCcc`**. |
 | **CCC → USDT** | Approve CCC → **`swapCccForUsdt`**; liquidity hint = **`USDT.balanceOf(LoyaltyLevelVault)`** when configured. |
 | **Mining** | **Stake** + **Claim rewards** only (no unstake UI for current bytecode). |
-| **Gating** | On **production mainnet** (`PROD` + chain **56`), Home **Points Swap** may show **Coming Soon** — see FULL_PROJECT_SPEC §5.3. |
+| **Gating** | Full **`/ccc-hub`** UI only when **`useCccHubNavAccess`** allows (**MasterWallet**, env trusted deployers, **`EXTRA_FULL_ADMIN_NAV_WALLETS`**, **`CustomNFT.owner()`** / **`initialDeployer()`**). Others always see **Coming Soon**. Brief **`ccc.accessChecking`** during on-chain reads. See **FULL_PROJECT_SPEC** §5.3. |
 
 ---
 
