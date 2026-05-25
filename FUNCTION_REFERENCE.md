@@ -37,6 +37,7 @@ Quick reference for all contract and frontend functions.
 | `setGiftCardReceiver(addr)` | external, owner | Set Gift Card SC (GiftCardReceiver). |
 | `safeMintGift(to)` | external | Mint a gift card to `to`. Reverts if `balanceOf(to) != 0`. No payment; gift minter only. |
 | `safeMintGift(to, referrer)` | external | Same; optional `referrer` sets `referredBy[to]` when unset (like first paid mint), so upline earns Loyalty Points when `to`’s downline mints. Use when the recipient may only ever hold the gift card. |
+| `applyCccSwapUsdtAgainstWalletCaps(user, usdtWei)` | external | **Only LoyaltyLevelVault (`sc3Loyalty`).** Before SC3 transfers USDT for a CCC swap, consumes the user’s remaining **wallet** payout headroom on their NFTs (`withdrawAmount` / `withdrawAmountCLC2` minus `amountPaidOutToWallet`; enumerable order). Reverts if aggregate headroom is less than `usdtWei`. Emits **`CccSwapWalletCapConsumed`**. |
 
 **Internal / private (called during mint or reward):**  
 `_processMint`, `_distributeToPrevTokens`, `_accrueReward`, `_maybeAutoMint`, `_getRewardCap`, `_getWithdrawAmount`, `_setTierConfigs`, `_setReferrer`, `_loyaltyLevelPointsForTier`.
@@ -66,7 +67,7 @@ Quick reference for all contract and frontend functions.
 |----------|------|-------------|
 | `creditPoints(user, loyaltyDelta, levelDelta)` | external | **Master** or allowlisted **`loyaltyPointCreditors`** (e.g. payment split lib). Credits loyalty and level points. |
 | `debitTotalPoints(user, totalBurn)` | external | **Master** or allowlisted **`loyaltyPointConsumers`** (e.g. CCCPlatform). Burns loyalty balance first, then level. |
-| `pullUsdtForCccSwap(token, to, amount)` | external | Only **`cccPlatformSwapPuller`** (CCCPlatform). Sends USDT from vault for CCC→USDT swaps. |
+| `pullUsdtForCccSwap(token, to, amount)` | external | Only **`cccPlatformSwapPuller`** (CCCPlatform). Calls **Master `applyCccSwapUsdtAgainstWalletCaps(to, amount)`** then transfers USDT from vault to **`to`** for CCC→USDT swaps. |
 | `setLoyaltyPointCreditor(account, allowed)` | external, owner | Allow helper contracts to call `creditPoints`. |
 | `setLoyaltyPointConsumer(account, allowed)` | external, owner | Allow contracts (CCCPlatform) to call `debitTotalPoints`. |
 | `setCccPlatformSwapPuller(account)` | external, owner | Single CCCPlatform allowed to pull USDT for swaps. |
@@ -91,9 +92,9 @@ Quick reference for all contract and frontend functions.
 
 | Function | Type | Description |
 |----------|------|-------------|
-| `previewPointsToCcc(totalPoints)` | view | CCC out for valid point multiples of 10 (1000 points → 300 CCC smallest units). |
+| `previewPointsToCcc(totalPoints)` | view | CCC out for valid point multiples of 10 (100 points → 30 CCC smallest units; scales linearly). |
 | `swapPointsForCcc(totalPointsToBurn)` | external | Debits points on vault; transfers CCC from platform balance to user. |
-| `swapCccForUsdt(cccAmountIn)` | external | 5% CCC burn; remainder priced at **$0.05/CC**; pulls USDT from SC3 via `pullUsdtForCccSwap`. |
+| `swapCccForUsdt(cccAmountIn)` | external | 5% CCC burn; remainder priced at **$0.05/CC**; **`pullUsdtForCccSwap`** charges NFT wallet caps then pays USDT from SC3. **Reverts** if aggregate wallet headroom across the user’s cards is insufficient for gross USDT out. |
 | `stake(amount)` | external | 5% burn; net added to stake; accrues **0.8%/day**. **No unstake:** principal stays on hub until redeploy/migration. |
 | `claimStakeRewards()` | external | Claims accrued **reward** CCC from platform balance (does not withdraw staked principal). |
 | `pendingStakeRewards(account)` | view | Accrued + time-weighted pending rewards. |

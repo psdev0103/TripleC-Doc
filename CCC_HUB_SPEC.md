@@ -20,7 +20,7 @@ Companion to [FULL_PROJECT_SPEC.md](FULL_PROJECT_SPEC.md) §3.3–3.5. Describes
 | Contract | Proxy? | Role |
 |----------|--------|------|
 | **CCCToken** | No | ERC20, **6 decimals**, fixed supply (**100_000_000** CCC minted to deployer at deploy). |
-| **CCCPlatform** | No | Points→CCC, CCC→USDT, stake, claim rewards; immutable constructor args (**CCC**, **USDT**, **LoyaltyLevelVault**). |
+| **CCCPlatform** | No (immutable) | Points→CCC, CCC→USDT, stake, claim rewards — **new hub = redeploy + SC3 rewire.** |
 | **LoyaltyLevelVault** | Upgradeable | Points ledger; **`debitTotalPoints`** for redemptions; **`pullUsdtForCccSwap`** for swap payouts. |
 
 Frontend: **`TripleC-Frontend`** — **`/ccc-hub`**, **`CccHub.jsx`**, **`CONTRACT_ADDRESSES`** in `src/config/contracts.js`.
@@ -32,7 +32,7 @@ Frontend: **`TripleC-Frontend`** — **`/ccc-hub`**, **`CccHub.jsx`**, **`CONTRA
 | Rule | Detail |
 |------|--------|
 | Point step | Multiples of **10** points only |
-| Points → CCC | **10 points → 3 CCC** (i.e. **1,000 points → 300 CCC** in token units). |
+| Points → CCC | **100 points → 30 CCC** (also **10 → 3**, **1,000 → 300**). |
 | CCC → USDT | **5%** of CCC in is **burned**; remainder converts at **$0.05 per 1 CCC** (USDT **18 decimals**, CCC **6 decimals** — math is encoded in Solidity). |
 | Stake | **5%** of CCC sent is **burned**; **net** amount increases staked principal. |
 | Mining / staking APR | **0.8% per calendar day** on **net staked principal** (`STAKE_DAILY_BPS = 80`). |
@@ -55,7 +55,7 @@ Frontend: **`TripleC-Frontend`** — **`/ccc-hub`**, **`CccHub.jsx`**, **`CONTRA
 
 1. User **approves** CCC to **CCCPlatform**; transfers **CCC in** (`safeTransferFrom`).
 2. **5%** CCC → **`0xdEaD`**; remainder priced for USDT out.
-3. **CCCPlatform** calls **SC3** **`pullUsdtForCccSwap(usdt, user, amount)`**. Only **`cccPlatformSwapPuller`** may call; vault must hold enough **USDT**.
+3. **CCCPlatform** calls **SC3** **`pullUsdtForCccSwap(usdt, user, amount)`**. The vault invokes **Master** **`applyCccSwapUsdtAgainstWalletCaps`** so the user’s NFT **wallet payout caps** are reduced (`amountPaidOutToWallet` ↑) **before** USDT is transferred. Only **`cccPlatformSwapPuller`** may call; vault must hold enough **USDT**. **If NFT headroom is less than `amount`, the swap reverts.**
 
 ### 4.3 Stake & rewards (`stake`, `claimStakeRewards`, `pendingStakeRewards`)
 
@@ -74,7 +74,7 @@ See [FULL_PROJECT_SPEC.md](FULL_PROJECT_SPEC.md) §3.5. Summary:
 3. Fund **SC3** with enough **USDT** for swap volume.
 4. Fund **CCCPlatform** with **CCC** for redemptions and **staking reward payouts**.
 
-Hardhat helpers: **`sc3:ccc-consumer:*`**, **`deploy:ccc-platform:*`** in **`SC/package.json`**.
+Hardhat helpers: **`sc3:ccc-consumer:*`**, **`sc3:ccc-swap-puller:*`**, **`deploy:ccc-platform:*`** in **`SC/package.json`**.
 
 ---
 
@@ -83,9 +83,9 @@ Hardhat helpers: **`sc3:ccc-consumer:*`**, **`deploy:ccc-platform:*`** in **`SC/
 | Area | Behavior |
 |------|-----------|
 | **Points → CCC** | Multiples of 10; uses **`swapPointsForCcc`**. |
-| **CCC → USDT** | Approve CCC → **`swapCccForUsdt`**; liquidity hint = **`USDT.balanceOf(LoyaltyLevelVault)`** when configured. |
+| **CCC → USDT** | Approve CCC → **`swapCccForUsdt`**; liquidity hint = **`USDT.balanceOf(LoyaltyLevelVault)`**. Swap also requires sufficient **NFT wallet payout headroom** (same **`amountPaidOutToWallet`** / withdraw limit buckets as incremental card payouts). |
 | **Mining** | **Stake** + **Claim rewards** only (no unstake UI for current bytecode). |
-| **Gating** | Full **`/ccc-hub`** UI only when **`useCccHubNavAccess`** allows (**MasterWallet**, env trusted deployers, **`EXTRA_FULL_ADMIN_NAV_WALLETS`**, **`CustomNFT.owner()`** / **`initialDeployer()`**). Others always see **Coming Soon**. Brief **`ccc.accessChecking`** during on-chain reads. See **FULL_PROJECT_SPEC** §5.3. |
+| **Gating** | **None.** Full **`/ccc-hub`** UI for all visitors; connect wallet for on-chain data and transactions. Helpers like **`canAccessCccHubNavSync`** in **`adminContractWallets.js`** are **not** used to hide the hub. |
 
 ---
 

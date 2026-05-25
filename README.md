@@ -4,7 +4,7 @@ This folder contains documentation you can use to describe the project (e.g. for
 
 | File | Purpose |
 |------|--------|
-| **FULL_PROJECT_SPEC.md** | **Master spec:** monorepo layout (Frontend, Backend, SC, deploy), networks & env, all smart-contract roles including CCC Hub / LoyaltyLevelVault swap plumbing, economics tables, frontend gates (Points Swap “Coming Soon”), backend API & scripts, Hardhat npm scripts, links to deeper docs. |
+| **FULL_PROJECT_SPEC.md** | **Master spec:** monorepo layout (Frontend, Backend, SC, deploy), networks & env, all smart-contract roles including CCC Hub / LoyaltyLevelVault swap plumbing, economics tables, CCC Hub UI (§5), backend API & scripts, Hardhat npm scripts, links to deeper docs. |
 | **CCC_HUB_SPEC.md** | **CCC Hub deep dive:** points→CCC, CCC→USDT, staking vs rewards, **no user unstake**, treasury funding (CCC on platform + USDT on SC3), operator checklist, links to ABI/deploy notes. |
 | **MAIN_FLOW_AND_CASHFLOW.md** | Main user and system flow (incl. **CCC Hub step** §1.1); cash flow (where USDT goes) for all card tiers on mint; CLC caps; first-mint overlap. |
 | **SMART_CONTRACTS_AND_PAYMENTS.md** | When each contract receives/sends USDT; CCC Hub role (staking, no unstake). |

@@ -67,19 +67,19 @@ There is **no separate `SC3` Node service folder** in this repo; “SC3” means
 - **ERC20**, **6 decimals**, fixed supply **100,000,000 CCC** minted to deployer at construction.
 - Platform pulls CCC from its own balance for points redemption; staking rewards paid from platform CCC balance (**must be funded** for rewards).
 
-### 3.4 CCCPlatform (non-proxy)
+### 3.4 CCCPlatform (non-proxy, immutable bytecode)
 
-Immutable deployment; wired at constructor to **CCC**, **USDT**, **LoyaltyLevelVault**.
+Separate deploy from **CCCToken**; **`constructor`** wires **CCC**, **USDT**, **LoyaltyLevelVault**. Any logic change ⇒ **new contract address**, **`deploy-ccc-platform-only.js`**, then SC3 (**`consumer`**, **`cccPlatformSwapPuller`**) and migration of CCC / user expectations.
 
 | Constant / behavior | Value |
 |---------------------|--------|
 | Point step | Multiples of **10** points only |
-| Points → CCC | **10 points → 3 CCC** → **1,000 points → 300 CCC** (`CCC_PER_10_POINTS` = 3e6 smallest units) |
+| Points → CCC | **100 points → 30 CCC** → same as **10 → 3** → **1,000 → 300** (`CCC_PER_10_POINTS` = 3e6 smallest units) |
 | CCC → USDT | **1 CCC = $0.05 USDT** (after 5% burn on input CCC) |
 | Swap / stake tax | **5%** of CCC (`TAX_BPS = 500`) sent to burn address **`0x…dEaD`** |
 | Staking APR | **0.8% per day** on **net** staked amount (`STAKE_DAILY_BPS = 80`) |
 | Staked principal | **No user `unstake`** in current source — principal stays on **CCCPlatform**; users only withdraw **reward** CCC via **`claimStakeRewards`**. See [CCC_HUB_SPEC.md](CCC_HUB_SPEC.md). |
-| USDT source for swap | **Not** platform balance — **`pullUsdtForCccSwap`** on SC3 |
+| USDT source for swap | **Not** platform balance — **`pullUsdtForCccSwap`** on SC3 (after Master debits NFT **wallet** headroom vs `withdrawAmount`). |
 
 **Main functions:** `previewPointsToCcc`, `swapPointsForCcc`, `swapCccForUsdt`, `stake`, `claimStakeRewards`, `pendingStakeRewards`, `rescueErc20` (owner).
 
@@ -87,15 +87,17 @@ Immutable deployment; wired at constructor to **CCC**, **USDT**, **LoyaltyLevelV
 
 After deploying or changing **CCCPlatform**:
 
-1. **`LoyaltyLevelVault.setLoyaltyPointConsumer(CCCPlatform, true)`** — allow point debits for points→CCC.  
-2. **`LoyaltyLevelVault.setCccPlatformSwapPuller(CCCPlatform)`** — allow USDT pull for swaps.  
+1. **`LoyaltyLevelVault.setLoyaltyPointConsumer(CCCPlatform, true)`** — allow point debits for points→CCC (`npm run sc3:ccc-consumer:testnet` / `:mainnet`; vault owner signer).  
+2. **`LoyaltyLevelVault.setCccPlatformSwapPuller(CCCPlatform)`** — allow USDT pull for swaps (`npm run sc3:ccc-swap-puller:testnet` / `:mainnet`).  
 3. Ensure **SC3 holds enough USDT** for expected CCC→USDT volume.  
 4. **Fund CCCPlatform** with CCC for redemptions and staking reward pool.
 
-Full narrative: **[CCC_HUB_SPEC.md](CCC_HUB_SPEC.md).
+Full narrative: **[CCC_HUB_SPEC.md](CCC_HUB_SPEC.md)**.
 
-Hardhat helpers in `SC/package.json`: `sc3:ccc-consumer:*`, `deploy:ccc:*`, `deploy:ccc-platform:*`.  
-If replacing an old platform, run the consumer script with **`OLD_CCC_PLATFORM`** set to revoke the previous consumer (see `scripts/set-sc3-ccc-consumer.js`).
+Hardhat helpers in `SC/package.json`: `sc3:ccc-consumer:*`, `sc3:ccc-swap-puller:*`, `deploy:ccc:*`, `deploy:ccc-platform:*`.
+
+**Deploy / immutable hub replacement:** full **`deploy:ccc:*`** (new CCCToken + hub) or **`deploy:ccc-platform:*`** (**`deploy-ccc-platform-only`**) keeping existing CCCToken; then vault-owner wiring above. **`upgrade-mainnet`** / **`upgrade-all-mainnet`** do **not** upgrade CCCPlatform (no proxy).
+If replacing **any older hub**, use **`deploy-ccc-platform-only`**, **`OLD_CCC_PLATFORM=… npm run sc3:ccc-consumer:*`**, **`npm run sc3:ccc-swap-puller:*`**, **`rescueErc20`** as needed.
 
 ### 3.6 Product notes (off-chain / future on-chain)
 
@@ -124,7 +126,7 @@ Per tier: **SC2** and **SC1b** fixed amounts; **SC3** receives **$0.50** on CLC2
 
 | Rule | Detail |
 |------|--------|
-| Points → CCC | **1,000 POINT** total (loyalty + level) → **300 CCC** |
+| Points → CCC | **100 POINTS** → **30 CCC** (e.g. **1,000** → **300**; multiples of **10** only) |
 | CCC → USDT | **5%** CCC burn; remainder at **$0.05 / CCC** |
 | Stake | **5%** burn on stake; **0.8%/day** on net stake |
 | Stake principal exit | **Not** callable by users in current bytecode — no **`unstake`**; rewards only via **`claimStakeRewards`**.
@@ -139,16 +141,12 @@ React 19, Vite 7, ethers.js 6, Tailwind 4, react-i18next; ABIs under `src/abis/`
 
 ### 5.2 Routes / major UI
 
-- **Home:** radial menu; **Points Swap** spoke links **`/ccc-hub`** (inside the page: admins full UI, others Coming Soon — §5.3).
+- **Home:** radial menu; **Points Swap** spoke links **`/ccc-hub`**.
 - **`/ccc-hub`:** **`CccHub.jsx`** — points redeem, CCC/USDT swap preview, **stake + claim rewards** (no unstake in UI for current hub); shows **SC3 USDT balance** as swap liquidity when vault address is configured.
-- **Gating:** **`CccHubGate`** always mounts **`CccHub`**. **`useCccHubNavAccess`** selects full UI vs Coming Soon (**MasterWallet**, **`VITE_TRUSTED_DEPLOYER_WALLETS`**, **`EXTRA_FULL_ADMIN_NAV_WALLETS`**, or on-chain **`CustomNFT.owner()`** / **`initialDeployer()`**); see **`adminContractWallets.js`**.
 
 ### 5.3 Points Swap / CCC Hub visibility
 
-- **`/ccc-hub`:** **Admins** see the full hub (same rules as nav access: **MasterWallet**, **`VITE_TRUSTED_DEPLOYER_WALLETS`**, **`EXTRA_FULL_ADMIN_NAV_WALLETS`**, or on-chain **`CustomNFT.owner()`** / **`initialDeployer()`**). **Non-admins** see localized **Coming Soon** (`home.pointsSwapComingSoon`) on **testnet and mainnet** (development builds use the same rule). While the wallet is connected and on-chain roles are still loading, **`ccc.accessChecking`** is shown briefly.
-- Home radial **Points Swap** always links to **`/ccc-hub`**; the gate is **inside** the page.
-
-**Deprecated note:** Previously, “Coming Soon” applied only to production mainnet by build flag; this is replaced by the **admin wallet** check above.
+- **`/ccc-hub`:** Every wallet sees the **full hub UI** on **BSC testnet and mainnet** (`CccHubGate` mounts **`CccHub`** with no Coming Soon gate). Users still **connect wallet** to load balances / send transactions (`ccc.connectWallet` when disconnected).
 
 ### 5.4 i18n
 
@@ -200,7 +198,7 @@ Hardhat ^2.22, Solidity **^0.8.27**, OpenZeppelin contracts + upgradeable plugin
 | Full deploy | `deploy:mainnet`, `deploy:testnet`, continue/resume variants |
 | Upgrades | `upgrade:mainnet`, `upgrade:testnet`, `upgrade:*:all` |
 | CCC | `deploy:ccc:testnet`, `deploy:ccc:mainnet`, `deploy:ccc-platform:testnet`, `deploy:ccc-platform:mainnet` |
-| SC3 wiring | `sc3:creditor:mainnet`, `sc3:creditor:testnet`, `sc3:ccc-consumer:mainnet`, `sc3:ccc-consumer:testnet` |
+| SC3 wiring | `sc3:creditor:mainnet`, `sc3:creditor:testnet`, `sc3:ccc-consumer:mainnet`, `sc3:ccc-consumer:testnet`, `sc3:ccc-swap-puller:mainnet`, `sc3:ccc-swap-puller:testnet` |
 
 Deployment artifacts: typically **`deployments/mainnet.json`**, **`deployments/testnet.json`** (when used by your pipeline).
 
@@ -236,7 +234,8 @@ Deployment artifacts: typically **`deployments/mainnet.json`**, **`deployments/t
 |------|------|
 | CCC swap liquidity | USDT from **LoyaltyLevelVault**, not CCCPlatform balance |
 | CCC staking | **`unstake` removed** from **CCCPlatform** source; principal not user-withdrawable; **`claimStakeRewards`** only for reward CCC |
+| CCC hub | **`CCCPlatform` immutable** — redeploy (**`deploy-ccc-platform-only`**) + SC3 rewire when changing bytecode. |
 | SC3 CLC2 | **$0.50** fixed — not a percentage of queue |
-| Points Swap UI | **Admin-wallet** gated **Coming Soon** on **`/ccc-hub`** for non-admins (all networks/builds); see §5.3 |
+| Points Swap UI | **`/ccc-hub`** full CCC Hub for everyone (mainnet & testnet); connect wallet for balances and txs; see §5.3 |
 
 When smart contracts or env contracts change, update **`contracts.js`** (frontend + backend as applicable), **`deployments/*.json`**, and this file’s **§2** / **§3** if behavior changes.
