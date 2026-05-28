@@ -23,16 +23,24 @@ Companion to [FULL_PROJECT_SPEC.md](FULL_PROJECT_SPEC.md) §3.3–3.5. Describes
 | **CCCPlatform** | No (immutable) | Points→CCC, CCC→USDT, stake, claim rewards — **new hub = redeploy + SC3 rewire.** |
 | **LoyaltyLevelVault** | Upgradeable | Points ledger; **`debitTotalPoints`** for redemptions; **`pullUsdtForCccSwap`** for swap payouts. |
 
-Frontend: **`TripleC-Frontend`** — **`/ccc-hub`**, **`CccHub.jsx`**, **`CONTRACT_ADDRESSES`** in `src/config/contracts.js`.
+Frontend: **`TripleC-Frontend`** — **`/ccc-hub`**, **`CccHub.jsx`**, **`CONTRACT_ADDRESSES`** in `src/config/contracts.js` (must match the **live** CCCToken / CCCPlatform you fund and allowlist on SC3).
 
 ---
 
-## 3. Economics (matches on-chain constants)
+## 3. Economics (on-chain constants)
+
+**CCCPlatform is immutable:** the **`CCC_PER_10_POINTS`** value baked into your deployment is what users receive forever (until you deploy and wire a new hub).
+
+**This repository’s Solidity** targets **100 points → 30 CCC** (`CCC_PER_10_POINTS = 3_000_000`, CCC **6 decimals**). If production pays less (e.g. **100 points → 2 CCC**, **1,000 → 20 CCC**), that deployment used a **smaller constant** (e.g. **`200_000`** per 10-point step)—not a bug in the redemption flow.
+
+**Always verify rate on-chain:** BscScan → your **CCCPlatform** → **Read** → **`previewPointsToCcc`**, enter `100` or `1000`; the return value ÷ **1e6** = CCC out.
+
+### Summary table
 
 | Rule | Detail |
 |------|--------|
 | Point step | Multiples of **10** points only |
-| Points → CCC | **100 points → 30 CCC** (also **10 → 3**, **1,000 → 300**). |
+| Points → CCC | `(points × CCC_PER_10_POINTS) / 10` in smallest CCC units. **Confirm** with **`previewPointsToCcc`** on the deployed contract. |
 | CCC → USDT | **5%** of CCC in is **burned**; remainder converts at **$0.05 per 1 CCC** (USDT **18 decimals**, CCC **6 decimals** — math is encoded in Solidity). |
 | Stake | **5%** of CCC sent is **burned**; **net** amount increases staked principal. |
 | Mining / staking APR | **0.8% per calendar day** on **net staked principal** (`STAKE_DAILY_BPS = 80`). |
@@ -70,11 +78,18 @@ Frontend: **`TripleC-Frontend`** — **`/ccc-hub`**, **`CccHub.jsx`**, **`CONTRA
 See [FULL_PROJECT_SPEC.md](FULL_PROJECT_SPEC.md) §3.5. Summary:
 
 1. **`setLoyaltyPointConsumer(CCCPlatform, true)`** on SC3 — points debits for redemptions.
-2. **`setCccPlatformSwapPuller(CCCPlatform)`** — USDT pulls for swaps.
+
+   The vault owner does not need to export a seed phrase: use **`/admin/ccc-hub-sc3`** in **`TripleC-Frontend`** (connect the owner wallet — usually the configured master wallet — and submit the tx in MetaMask).
+
+2. **`setCccPlatformSwapPuller(CCCPlatform)`** — USDT pulls for swaps (`/admin/ccc-hub-sc3` also runs this).
+
 3. Fund **SC3** with enough **USDT** for swap volume.
+
 4. Fund **CCCPlatform** with **CCC** for redemptions and **staking reward payouts**.
 
 Hardhat helpers: **`sc3:ccc-consumer:*`**, **`sc3:ccc-swap-puller:*`**, **`deploy:ccc-platform:*`** in **`SC/package.json`**.
+
+**Redeem button greyed out in the app:** `CCCPlatform` has no pause flag. The UI enables “Redeem for CCC” after point totals load; it reads `/api/loyalty` when the backend is configured, then falls back to the wallet RPC, then to a **public BSC RPC** read of `LoyaltyLevelVault`. If the transaction still reverts, verify **`setLoyaltyPointConsumer(CCCPlatform, true)`** on SC3 (testnet + mainnet) and sufficient **CCC** on **CCCPlatform**.
 
 ---
 
@@ -100,6 +115,7 @@ Hardhat helpers: **`sc3:ccc-consumer:*`**, **`sc3:ccc-swap-puller:*`**, **`deplo
 | Doc | Contents |
 |-----|----------|
 | [FULL_PROJECT_SPEC.md](FULL_PROJECT_SPEC.md) | §3 CCC tables, frontend §5, deploy scripts |
+| [CCC_HUB_REPLACE_PLATFORM.md](CCC_HUB_REPLACE_PLATFORM.md) | Deploy new CCCPlatform when rate/token wiring must change |
 | [FUNCTION_REFERENCE.md](FUNCTION_REFERENCE.md) | **`CCCPlatform`** / **`LoyaltyLevelVault`** function list |
 | [SMART_CONTRACTS_AND_PAYMENTS.md](SMART_CONTRACTS_AND_PAYMENTS.md) | When CCC / SC3 pay |
 | [SYSTEM_DIAGRAM.md](SYSTEM_DIAGRAM.md) | CCC Hub Mermaid |
